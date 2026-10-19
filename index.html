@@ -211,7 +211,7 @@
   </div>
 
   <div id="tileLoading">🗺 地图加载中…</div>
-  <div id="tileHint" style="display:none">底图加载不出来？点右下角 🗺 切换其他底图（推荐 CARTO / 地理院）</div>
+  <div id="tileHint" style="display:none">地图加载有点慢，请稍等…若一直空白，换个网络（如 4G）重新打开即可</div>
 
   <div id="lb"><div class="lb-load">大图加载中…</div><img id="lbImg" alt="大图"><button class="lb-x">关闭</button></div>
 
@@ -415,103 +415,41 @@ const map = L.map('map', {zoomControl:true, tap:true, preferCanvas:true,
 }).setView([42.45, 141.35], 8);
 map.zoomControl.setPosition('bottomright');
 
-// 底图：日本境内请用全球数据源（高德在日本只有空白瓦片，放到最大会一片空白）
-const TILE_OPT = {updateWhenIdle:true, updateWhenZooming:false, keepBuffer:1, maxNativeZoom:19,
+// 底图：只用一个源（Esri 街道图，Akamai CDN，国内实测最快、日本街道细节完整）
+const TILE_OPT = {updateWhenIdle:true, updateWhenZooming:false, keepBuffer:2, maxNativeZoom:18,
   noWrap:false, detectRetina:false};   // 关掉 retina 瓦片：高 DPI 手机否则会下载 4 倍数据量
-const baseLayers = {
-  'Esri 街道图（默认）': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    Object.assign({maxZoom:18, attribution:'© Esri, HERE, Garmin'}, TILE_OPT)),
-  'Esri 地形图': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-    Object.assign({maxZoom:18, attribution:'© Esri, USGS'}, TILE_OPT)),
-  'OSM 全球标准': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    Object.assign({subdomains:'abc', maxZoom:19, attribution:'© OpenStreetMap'}, TILE_OPT)),
-  'CARTO 探索风（升龙同款）': L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    Object.assign({subdomains:'abcd', maxZoom:19, attribution:'© OSM © CARTO'}, TILE_OPT)),
-  '地理院 日文详细': L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
-    Object.assign({maxZoom:18, attribution:'© 国土地理院'}, TILE_OPT)),
-  '地理院 淡色': L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
-    Object.assign({maxZoom:18, attribution:'© 国土地理院'}, TILE_OPT)),
-  '高德（仅中国境内有内容）': L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
-    Object.assign({subdomains:['1','2','3','4'], maxZoom:18, attribution:'© AutoNavi'}, TILE_OPT)),
-};
-// 顺序 = 国内网络下的加载速度优先级：CARTO 走全球 CDN 最快，地理院是日本机房，OSM 官方最慢
-const LAYER_ORDER = ['Esri 街道图（默认）','Esri 地形图','CARTO 探索风（升龙同款）','地理院 淡色','OSM 全球标准','高德（仅中国境内有内容）'];
-let baseIdx = 0;
-baseLayers[LAYER_ORDER[0]].addTo(map);
-L.control.layers(baseLayers, null, {position:'bottomright', collapsed:true}).addTo(map);
+const esriLayer = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+  Object.assign({maxZoom:18, attribution:'© Esri, HERE, Garmin'}, TILE_OPT)).addTo(map);
 
-map.on('baselayerchange', function(e){
-  const i = LAYER_ORDER.findIndex(n => baseLayers[n] === e.layer);
-  if(i >= 0) baseIdx = i;
-  hideTileHint();
-});
-
-// 底图看门狗：当前底图 8 秒还加载不出内容，就自动换下一个源；用户手动切换后立即停止
-let tileOk = 0, probing = false, tries = 0, userPicked = false, autoSwitching = false;
+// 静默兜底：极少数网络下 Esri 连不上时，自动换成备用源，界面上不给用户选择
+//（CARTO 现在要 API key，返回带水印的废瓦片，不能用）
+const backupLayer = L.tileLayer(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  Object.assign({subdomains:'abc', maxZoom:19, attribution:'© OpenStreetMap'}, TILE_OPT));
+let tileOk = 0, switched = false;
 map.on('tileload', function(){
   tileOk++;
-  if(tileOk >= 2){ hideTileHint(); const l = document.getElementById('tileLoading'); if(l) l.style.display='none'; }
+  if(tileOk >= 2){
+    const l = document.getElementById('tileLoading'); if(l) l.style.display='none';
+    document.getElementById('tileHint').style.display = 'none';
+  }
 });
-// 7 秒还没出图：换成手动提示，别让用户一直盯着"加载中"
 setTimeout(function(){
-  if(tileOk === 0){ const l = document.getElementById('tileLoading'); if(l) l.style.display='none'; showTileHint(); }
-}, 7000);
-function switchBase(){
-  if(tries >= 2){ showTileHint(); return; }   // 最多自动换 2 次，再多就是网络本身不通
-  probing = true; tries++;
-  const cur = LAYER_ORDER[baseIdx];
-  baseIdx = (baseIdx + 1) % LAYER_ORDER.length;
-  autoSwitching = true;
-  map.removeLayer(baseLayers[cur]);
-  baseLayers[LAYER_ORDER[baseIdx]].addTo(map);
-  autoSwitching = false;
-  tileOk = 0;
-  setTimeout(function(){ probing = false; }, 5000);
-}
-const watchdog = setInterval(function(){
-  if(userPicked || tileOk >= 2){ clearInterval(watchdog); return; }
-  if(probing) return;
-  switchBase();
-}, 3500);   // 3.5 秒还没出图就换下一个源，别让用户干等
-map.on('baselayerchange', function(){
-  if(!autoSwitching){ userPicked = true; clearInterval(watchdog); }
-  hideTileHint();
-});
-function showTileHint(){ document.getElementById('tileHint').style.display='block'; }
-function hideTileHint(){ document.getElementById('tileHint').style.display='none'; }
-
-// ---------- 底图测速：并发探一张瓦片，谁先回来就用谁 ----------
-// 国内网络下各源差距很大（OSM 官方常最慢），自动挑最快的，避免干等
-const SAMPLE_TILES = {
-  '地理院 淡色':   'https://cyberjapandata.gsi.go.jp/xyz/pale/8/228/94.png',
-  '地理院 日文详细':'https://cyberjapandata.gsi.go.jp/xyz/std/8/228/94.png',
-  'OSM 全球标准':  'https://a.tile.openstreetmap.org/8/228/94.png',
-};
-let raceDone = false;
-function raceProbe(){
-  Object.entries(SAMPLE_TILES).forEach(([name, url])=>{
-    const im = new Image();
-    const timer = setTimeout(()=>{ im.src = ''; }, 9000);
-    im.onload = ()=>{
-      clearTimeout(timer);
-      if(raceDone || tileOk > 0) return;   // 默认源已经出图就不再折腾
-      raceDone = true; useWinner(name);
-    };
-    im.onerror = ()=>{ clearTimeout(timer); };
-    im.src = url + '?_=' + Date.now();
-  });
-}
-function useWinner(name){
-  const i = LAYER_ORDER.indexOf(name);
-  if(i < 0 || i === baseIdx) return;
-  autoSwitching = true;
-  map.removeLayer(baseLayers[LAYER_ORDER[baseIdx]]);
-  baseIdx = i;
-  baseLayers[name].addTo(map);
-  autoSwitching = false;
-  tileOk = 0;
-}
-raceProbe();
+  if(tileOk > 0) return;
+  const l = document.getElementById('tileLoading'); if(l) l.style.display='none';
+  if(switched){ document.getElementById('tileHint').style.display = 'block'; }
+}, 6000);
+// 5 秒没出图 → 备用源顶上（用户无感）
+setTimeout(function(){
+  if(tileOk > 0 || switched) return;
+  switched = true;
+  map.removeLayer(esriLayer);
+  backupLayer.addTo(map);
+  setTimeout(function(){
+    if(tileOk === 0) document.getElementById('tileHint').style.display = 'block';
+  }, 7000);
+}, 5000);
 
 const imgCache = {};
 const markers = {};
