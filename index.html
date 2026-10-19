@@ -21,6 +21,14 @@
 <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin>
 <link rel="stylesheet" href="leaflet.css">
 <script src="leaflet.js"></script>
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/228/93.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/228/94.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/228/95.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/228/96.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/229/93.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/229/94.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/229/95.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/229/96.png">
 <style>
   :root{
     --airport:#64748B; --sapporo:#2563EB; --otaru:#0E9594;
@@ -38,7 +46,7 @@
   #topbar{position:absolute;top:0;left:0;right:0;z-index:900;height:calc(50px + var(--safe-top));
     padding:var(--safe-top) 10px 0;display:flex;align-items:center;gap:8px;
     background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.82));
-    backdrop-filter:saturate(1.4) blur(8px);-webkit-backdrop-filter:saturate(1.4) blur(8px);
+    /* 移动端不用 backdrop-filter：地图平移时每帧模糊会明显掉帧，改半透明实色 */
     border-bottom:1px solid rgba(0,0,0,.07)}
   #topbar .tt{font-size:15px;font-weight:700;line-height:1.15;flex:1;min-width:0;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -145,9 +153,10 @@
   .sh-copy:active{background:#0f2540}
   .sh-tip{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}
 
-  #tileHint{position:absolute;bottom:calc(16px + var(--safe-bot));left:50%;transform:translateX(-50%);z-index:900;
+  #tileLoading,#tileHint{position:absolute;bottom:calc(16px + var(--safe-bot));left:50%;transform:translateX(-50%);z-index:900;
     background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:8px 14px;font-size:12px;color:#856404;
     box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;max-width:88%;text-align:center;line-height:1.5}
+  #tileLoading{display:block;background:#e8f1fb;border-color:#9dc4ea;color:#1e4b7a}
   .leaflet-control-layers{border-radius:10px!important;box-shadow:0 2px 8px rgba(0,0,0,.15)!important}
   .leaflet-control-layers-toggle{background-image:none!important;width:36px!important;height:36px!important;
     display:flex!important;align-items:center;justify-content:center;font-size:18px}
@@ -201,14 +210,15 @@
     <button class="cb" id="ovlClose">关闭</button>
   </div>
 
-  <div id="tileHint">底图加载不出来？点右下角 🗺 切换其他底图（推荐 OSM / CARTO）</div>
+  <div id="tileLoading">🗺 地图加载中…</div>
+  <div id="tileHint" style="display:none">底图加载不出来？点右下角 🗺 切换其他底图（推荐 CARTO / 地理院）</div>
 
   <div id="lb"><div class="lb-load">大图加载中…</div><img id="lbImg" alt="大图"><button class="lb-x">关闭</button></div>
 
   <div id="share">
     <div class="sh-box">
       <div class="sh-t">📲 微信扫码打开这张地图</div>
-      <img id="shQr" alt="地图二维码">
+      <img id="shQr" alt="地图二维码" data-src="share_qr.png">
       <div class="sh-u" id="shUrl">https://linkbread.github.io/hokkaido-2027-map/</div>
       <button class="sh-copy" id="shCopy">复制链接</button>
       <div class="sh-tip">把这张二维码截图发给同伴，微信 / 相机扫一扫都能直接打开（永久链接，不会失效）</div>
@@ -389,8 +399,8 @@ const map = L.map('map', {zoomControl:true, tap:true, preferCanvas:true,
 map.zoomControl.setPosition('bottomright');
 
 // 底图：日本境内请用全球数据源（高德在日本只有空白瓦片，放到最大会一片空白）
-const TILE_OPT = {updateWhenIdle:true, updateWhenZooming:false, keepBuffer:2, maxNativeZoom:19,
-  noWrap:false, crossOrigin:true, detectRetina:false};
+const TILE_OPT = {updateWhenIdle:true, updateWhenZooming:false, keepBuffer:1, maxNativeZoom:19,
+  noWrap:false, detectRetina:false};   // 关掉 retina 瓦片：高 DPI 手机否则会下载 4 倍数据量
 const baseLayers = {
   'OSM 全球标准': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     Object.assign({subdomains:'abc', maxZoom:19, attribution:'© OpenStreetMap'}, TILE_OPT)),
@@ -403,7 +413,8 @@ const baseLayers = {
   '高德（仅中国境内有内容）': L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
     Object.assign({subdomains:['1','2','3','4'], maxZoom:18, attribution:'© AutoNavi'}, TILE_OPT)),
 };
-const LAYER_ORDER = ['OSM 全球标准','CARTO 探索风（升龙同款）','地理院 日文详细','地理院 淡色','高德（仅中国境内有内容）'];
+// 顺序 = 国内网络下的加载速度优先级：CARTO 走全球 CDN 最快，地理院是日本机房，OSM 官方最慢
+const LAYER_ORDER = ['CARTO 探索风（升龙同款）','地理院 淡色','地理院 日文详细','OSM 全球标准','高德（仅中国境内有内容）'];
 let baseIdx = 0;
 baseLayers[LAYER_ORDER[0]].addTo(map);
 L.control.layers(baseLayers, null, {position:'bottomright', collapsed:true}).addTo(map);
@@ -416,9 +427,16 @@ map.on('baselayerchange', function(e){
 
 // 底图看门狗：当前底图 8 秒还加载不出内容，就自动换下一个源；用户手动切换后立即停止
 let tileOk = 0, probing = false, tries = 0, userPicked = false, autoSwitching = false;
-map.on('tileload', function(){ tileOk++; if(tileOk >= 3) hideTileHint(); });
+map.on('tileload', function(){
+  tileOk++;
+  if(tileOk >= 2){ hideTileHint(); const l = document.getElementById('tileLoading'); if(l) l.style.display='none'; }
+});
+// 7 秒还没出图：换成手动提示，别让用户一直盯着"加载中"
+setTimeout(function(){
+  if(tileOk === 0){ const l = document.getElementById('tileLoading'); if(l) l.style.display='none'; showTileHint(); }
+}, 7000);
 function switchBase(){
-  if(tries >= LAYER_ORDER.length - 1){ showTileHint(); return; }
+  if(tries >= 2){ showTileHint(); return; }   // 最多自动换 2 次，再多就是网络本身不通
   probing = true; tries++;
   const cur = LAYER_ORDER[baseIdx];
   baseIdx = (baseIdx + 1) % LAYER_ORDER.length;
@@ -430,16 +448,49 @@ function switchBase(){
   setTimeout(function(){ probing = false; }, 5000);
 }
 const watchdog = setInterval(function(){
-  if(userPicked || tileOk >= 3){ clearInterval(watchdog); return; }
+  if(userPicked || tileOk >= 2){ clearInterval(watchdog); return; }
   if(probing) return;
   switchBase();
-}, 8000);
+}, 3500);   // 3.5 秒还没出图就换下一个源，别让用户干等
 map.on('baselayerchange', function(){
   if(!autoSwitching){ userPicked = true; clearInterval(watchdog); }
   hideTileHint();
 });
 function showTileHint(){ document.getElementById('tileHint').style.display='block'; }
 function hideTileHint(){ document.getElementById('tileHint').style.display='none'; }
+
+// ---------- 底图测速：并发探一张瓦片，谁先回来就用谁 ----------
+// 国内网络下各源差距很大（OSM 官方常最慢），自动挑最快的，避免干等
+const SAMPLE_TILES = {
+  '地理院 淡色':   'https://cyberjapandata.gsi.go.jp/xyz/pale/8/228/94.png',
+  '地理院 日文详细':'https://cyberjapandata.gsi.go.jp/xyz/std/8/228/94.png',
+  'OSM 全球标准':  'https://a.tile.openstreetmap.org/8/228/94.png',
+};
+let raceDone = false;
+function raceProbe(){
+  Object.entries(SAMPLE_TILES).forEach(([name, url])=>{
+    const im = new Image();
+    const timer = setTimeout(()=>{ im.src = ''; }, 9000);
+    im.onload = ()=>{
+      clearTimeout(timer);
+      if(raceDone || tileOk > 0) return;   // 默认源已经出图就不再折腾
+      raceDone = true; useWinner(name);
+    };
+    im.onerror = ()=>{ clearTimeout(timer); };
+    im.src = url + '?_=' + Date.now();
+  });
+}
+function useWinner(name){
+  const i = LAYER_ORDER.indexOf(name);
+  if(i < 0 || i === baseIdx) return;
+  autoSwitching = true;
+  map.removeLayer(baseLayers[LAYER_ORDER[baseIdx]]);
+  baseIdx = i;
+  baseLayers[name].addTo(map);
+  autoSwitching = false;
+  tileOk = 0;
+}
+raceProbe();
 
 const imgCache = {};
 const markers = {};
@@ -450,7 +501,7 @@ function badgeHTML(s){
 }
 function iconHTML(s){
   return L.divIcon({
-    className:'', html:`<div style="width:30px;height:30px;border-radius:50%;background:${CATS[s.cat].color};color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)">${s.id}</div>`,
+    className:'', html:`<div style="width:30px;height:30px;border-radius:50%;background:${CATS[s.cat].color};color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;outline:1px solid rgba(15,23,42,.35)">${s.id}</div>`,
     iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-16]
   });
 }
@@ -518,9 +569,15 @@ const scrim   = document.getElementById('scrim');
 const isMobile = ()=> window.innerWidth <= 860;
 // 抽屉打开时才真正下载缩略图（首屏零图片请求，加快首开）
 function hydrateThumbs(){
-  document.querySelectorAll('#list img[data-src]').forEach(img=>{
-    img.src = img.dataset.src; img.removeAttribute('data-src');
-  });
+  const imgs = Array.from(document.querySelectorAll('#list img[data-src]'));
+  let i = 0;
+  const step = ()=>{                       // 分批：一次灌 20 多张图手机会卡一下
+    for(let k = 0; k < 4 && i < imgs.length; k++, i++){
+      const im = imgs[i]; im.src = im.dataset.src; im.removeAttribute('data-src');
+    }
+    if(i < imgs.length) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 function openSide(){ sidebar.classList.add('open'); hydrateThumbs(); if(isMobile()) scrim.classList.add('show'); }
 function closeSide(){ sidebar.classList.remove('open'); scrim.classList.remove('show'); }
@@ -651,8 +708,11 @@ function closeLightbox(){ lb.classList.remove('show'); lbImg.removeAttribute('sr
 
 // ---------- 分享二维码（微信扫码直接打开）----------
 const share = document.getElementById('share');
-document.getElementById('shQr').src = SHARE_QR;
-function openShare(){ share.classList.add('show'); }
+function openShare(){
+  const q = document.getElementById('shQr');
+  if(q.dataset.src){ q.src = q.dataset.src; q.removeAttribute('data-src'); }  // 点开才下载
+  share.classList.add('show');
+}
 function closeShare(){ share.classList.remove('show'); }
 document.getElementById('bShare').onclick = openShare;
 document.getElementById('shClose').onclick = closeShare;
@@ -684,7 +744,11 @@ async function loadWikiImage(term){
     + '&generator=search&gsrsearch=' + encodeURIComponent(term)
     + '&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url|mime&iiurlwidth=640&origin=*';
   try{
-    const res = await fetch(url); const data = await res.json();
+    // 8 秒拿不到就放弃：wikimedia 在国内常超时，不能拖慢整页
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 8000);
+    const res = await fetch(url, {signal: ctrl.signal}); clearTimeout(timer);
+    const data = await res.json();
     const pages = (data.query && data.query.pages) || {};
     for(const k in pages){
       const ii = pages[k].imageinfo; if(!ii) continue;
@@ -723,7 +787,8 @@ function warmWiki(){
   if('requestIdleCallback' in window) requestIdleCallback(step, {timeout: 3000}); else setTimeout(step, 1500);
 }
 buildLegend(); buildFilters(); buildList(); buildItinerary();
-if('requestIdleCallback' in window) requestIdleCallback(warmWiki); else setTimeout(warmWiki, 1500);
+// 不再后台批量拉维基图（国内访问 wikimedia 很慢，会拖慢整页）；
+// 改为打开某个点位的弹窗时才按需取图，见 afterPopupOpen()。
 </script>
 </body>
 </html>
