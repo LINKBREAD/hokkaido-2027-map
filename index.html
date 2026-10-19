@@ -348,7 +348,10 @@ map.on('baselayerchange', function(){
   if(!autoSwitching){ userPicked = true; clearInterval(watchdog); }
   hideTip();
 });
-setTimeout(function(){ if(tileOk === 0) showWarn(); }, 9000);
+setTimeout(function(){
+  // 以页面上实际渲染的瓦片数为准（缓存命中时 tileload 事件可能不触发）
+  if(tileOk === 0 && document.querySelectorAll('.leaflet-tile-loaded').length === 0) showWarn();
+}, 9000);
 function showWarn(){
   const t = document.getElementById('tip');
   t.className = 'warn'; t.textContent = '底图加载不出来？点右下角 🗺 换一个底图试试';
