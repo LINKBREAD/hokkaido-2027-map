@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0D1B2E">
+<title>2027 新春北海道 · 雪国巡礼地图</title>
+<meta name="description" content="2027 新春北海道行程地图：2/8–2/16，新千岁→札幌→小樽→登别→洞爷→函馆，31 处地点含实拍照片、地址、营业时间与攻略贴士。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="2027 新春北海道 · 雪国巡礼地图">
+<meta property="og:description" content="9天8晚 · 31 处地点 · 实拍照片 · 航班酒店">
+<meta property="og:image" content="https://linkbread.github.io/hokkaido-2027-map/og-image.jpg">
+<meta property="og:url" content="https://linkbread.github.io/hokkaido-2027-map/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="dns-prefetch" href="https://server.arcgisonline.com">
+<link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
+<link rel="stylesheet" href="leaflet.css">
+<script src="leaflet.js"></script>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#dfe5ec;
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;color:#222633}
+  #map{position:absolute;inset:0;z-index:1;background:#dfe5ec}
+
+  /* 顶部细条：无毛玻璃，纯半透明实色，移动端不掉帧 */
+  #bar{position:absolute;top:0;left:0;right:0;z-index:800;display:flex;align-items:center;gap:8px;
+    padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;
+    background:rgba(255,255,255,.92);border-bottom:1px solid rgba(15,23,42,.08)}
+  #bar .t{font-size:14px;font-weight:700;letter-spacing:.3px;flex:1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #bar .b{border:1px solid #d7dce3;background:#fff;border-radius:999px;padding:6px 12px;
+    font-size:12px;font-weight:600;color:#1e3a5f;cursor:pointer;white-space:nowrap}
+
+  /* 弹窗 */
+  .leaflet-popup-content-wrapper{border-radius:12px!important;overflow:hidden;
+    box-shadow:0 6px 20px rgba(0,0,0,.18)!important}
+  .leaflet-popup-content{margin:0!important;width:250px!important}
+  .pop-img{width:100%;height:140px;object-fit:cover;display:block;background:#e9eef4}
+  .pop-img-ph{height:120px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#9aa5b1;background:#eef2f6}
+  .pop-bd{padding:10px 12px 12px}
+  .pop-nm{font-size:14px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .pb{display:inline-block;color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:5px;vertical-align:1px}
+  .tt{font-size:10px;color:#6b7280;border:1px solid #d7dce3;border-radius:4px;padding:0 4px}
+  .row{font-size:11.5px;color:#4b5563;line-height:1.6}
+  .row b{color:#374151;font-weight:600}
+  .hist{font-size:11.5px;color:#4b5563;line-height:1.65;margin-top:6px;
+    background:#f6f8fa;border-radius:8px;padding:7px 9px}
+  .near{font-size:11px;color:#6b7280;margin-top:6px}
+  .cp{display:block;width:100%;margin-top:9px;border:none;border-radius:8px;background:#1e3a5f;
+    color:#fff;font-size:12px;font-weight:600;padding:9px 0;cursor:pointer}
+  .leaflet-popup-close-button{width:26px!important;height:26px!important;font-size:18px!important;color:#fff!important}
+
+  /* 提示条 */
+  #tip{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:50%;
+    transform:translateX(-50%);z-index:900;background:#e8f1fb;border:1px solid #9dc4ea;color:#1e4b7a;
+    border-radius:10px;padding:7px 13px;font-size:12px;display:none;max-width:86%;text-align:center}
+  #tip.warn{background:#fff3cd;border-color:#ffc107;color:#856404}
+
+  /* 灯箱：点图看大图 */
+  #lb{position:absolute;inset:0;z-index:2000;background:rgba(6,11,20,.94);display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
+  #lb.show{display:flex}
+  #lb img{max-width:100%;max-height:82%;border-radius:10px;display:none}
+  #lb .ld{color:#cbd5e1;font-size:13px}
+  #lb .x{padding:9px 26px;border:none;border-radius:999px;background:#fff;color:#16324F;font-size:14px;font-weight:600}
+
+  /* 行程 / 分享 面板 */
+  .modal{position:absolute;inset:0;z-index:1900;background:rgba(8,14,24,.9);display:none;
+    align-items:center;justify-content:center;padding:16px}
+  .modal.show{display:flex}
+  .mbox{width:100%;max-width:520px;max-height:82%;overflow:auto;-webkit-overflow-scrolling:touch;
+    background:#fff;border-radius:14px;padding:16px 18px}
+  .mbox h3{margin:0 0 12px;font-size:15px}
+  .itn-day{margin-bottom:12px}
+  .dt{font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:4px}
+  .it{font-size:12.5px;color:#374151;line-height:1.9}
+  .it.spot{color:#1d4ed8;font-weight:600;cursor:pointer}
+  .note{font-size:11px;color:#856404;background:#fff8e1;border-radius:8px;padding:8px 10px;margin-top:10px;line-height:1.6}
+  .mclose{display:block;width:100%;margin-top:12px;border:none;border-radius:999px;background:#1e3a5f;
+    color:#fff;font-size:14px;font-weight:600;padding:10px 0}
+  #shQr{width:220px;height:220px;display:block;margin:0 auto 10px}
+  .sh-url{font-size:11px;color:#1d4ed8;text-align:center;word-break:break-all;margin-bottom:10px}
+  .leaflet-control-layers{border-radius:10px!important;box-shadow:0 2px 8px rgba(0,0,0,.15)!important}
+  .leaflet-control-layers-toggle{background-image:none!important;width:36px!important;height:36px!important;
+    display:flex!important;align-items:center;justify-content:center;font-size:18px}
+  .leaflet-control-layers-toggle::before{content:'🗺'}
+  .leaflet-control-layers-expanded label{font-size:12px;margin:4px 0}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="bar">
+  <div class="t">❄️ 2027 新春北海道 · 雪国巡礼</div>
+  <button class="b" id="bI">✈️ 行程</button>
+  <button class="b" id="bS">📲 分享</button>
+</div>
+
+<div id="tip">🗺 地图加载中…</div>
+
+<div id="lb"><div class="ld">大图加载中…</div><img id="lbImg" alt="大图"><button class="x">关闭</button></div>
+
+<div class="modal" id="itn"><div class="mbox">
+  <h3>✈️ 行程总览 · 2/8 – 2/16（9天8晚）</h3>
+  <div id="itnList"></div>
+  <div class="note">⚠️ NH577 / NH578 / NH973 有「航班调整」通知，出发前请再确认时刻。</div>
+  <button class="mclose" id="itnClose">关闭</button>
+</div></div>
+
+<div class="modal" id="sh"><div class="mbox">
+  <h3 style="text-align:center">📲 微信扫码打开这张地图</h3>
+  <img id="shQr" alt="地图二维码" data-src="share_qr.png">
+  <div class="sh-url">https://linkbread.github.io/hokkaido-2027-map/</div>
+  <button class="mclose" id="shClose">关闭</button>
+</div></div>
+
+<script>
+const HAS_PHOTO = new Set(["AP1", "HA1", "HA2", "HA3", "HA4", "HA5", "HA6", "HA7", "NO1", "NO2", "NO3", "OT2", "OT3", "OT4", "SP1", "SP2", "SP3", "SP7", "SP8", "TO1", "TO2", "TO3"]);
+const THUMB_DIR = 'thumbs/', PHOTO_DIR = 'photos/';
+const CATS = {
+  airport:     {name:'机场门户', color:'#64748B', icon:'✈️'},
+  sapporo:     {name:'札幌',     color:'#2563EB', icon:'❄️'},
+  otaru:       {name:'小樽',     color:'#0E9594', icon:'🕯️'},
+  noboribetsu: {name:'登别',     color:'#E63946', icon:'♨️'},
+  toya:        {name:'洞爷',     color:'#0891B2', icon:'🌊'},
+  hakodate:    {name:'函馆',     color:'#EA580C', icon:'🌃'},
+  osaka:       {name:'大阪中转', color:'#7C3AED', icon:'🏙️'},
+};
+const SPOTS = [
+  {id:'AP1',cat:'airport',type:'机场',name:'新千岁机场',lat:42.7752,lng:141.6923,
+   addr:'北海道千歳市美々（JR快速约40分钟到札幌市区）', hours:'航站楼全天（商店约8:00–21:00）', fee:'—',
+   hist:'北海道空中门户与本次行程起止点。机场本身就是景点：3F「微笑之路」有哆啦A梦惊喜空中乐园、Hello Kitty Happy Flight、宝可梦商店；别忘了一支白色恋人软冰淇淋和海鲜盖饭收官。',
+   near:'去程 NH577 于 2/9 10:30 抵达（大阪神户起飞 08:40）；返程 NH578 于 2/15 18:30 起飞，建议 16:00 前到机场。伴手礼集中在2F。'},
+
+  {id:'SP1',cat:'sapporo',type:'景点',name:'北海道大学·综合博物馆',lat:43.0716,lng:141.3401,
+   addr:'札幌市北区北10条西8丁目', hours:'博物馆10:00–17:00（周一休）', fee:'免费',
+   hist:'飘雪的校园静谧祥和，银杏大道与白杨林道雪后如同白色隧道，人流稀少，有几分孤独美学的味道。综合博物馆免费开放，纪念品商店的窗外雪景本身就是一幅画，咖啡馆也值得一坐。',
+   near:'JR札幌站北口步行约10分钟；可顺路走到钟楼方向。'},
+  {id:'SP2',cat:'sapporo',type:'景点',name:'白色恋人公园',lat:43.0883,lng:141.2713,
+   addr:'札幌市西区宮の沢2条2丁目', hours:'9:00–18:00', fee:'参观免费（工房体验另计）',
+   hist:'欧洲古堡风格的巧克力工厂。重点玩法：冰箱贴DIY——进园先冲门店领整理券（下午可能停发），按整理券时间回来上传照片定制，可刻日期，制作约30分钟，等货时先去吃饭。Google 搜 Nagoyakatei 回转寿司（11:00 营业、步行10分钟）不排队。',
+   near:'地铁东西线「宮の沢」站步行约7分钟；傍晚亮灯更梦幻。'},
+  {id:'SP3',cat:'sapporo',type:'景点',name:'中岛公园',lat:43.0482,lng:141.3509,
+   addr:'札幌市中央区中島公園1', hours:'全天', fee:'免费',
+   hist:'雪很厚、游客很少的城市绿洲：玩雪的小朋友、遛狗和滑雪的居民、安静看雪的老人，能真实感受到北海道原本的生活状态。角落里大大小小的雪人充满趣味，连自动贩卖机都顶着一床雪被子。',
+   near:'地铁南北线「中島公園」站直达；园内有丰平馆（白色洋馆）与天文台。'},
+  {id:'SP4',cat:'sapporo',type:'景点',name:'大通公园·札幌电视塔',lat:43.0610,lng:141.3564,
+   addr:'札幌市中央区大通西1丁目', hours:'电视塔展望台9:00–22:00', fee:'展望台成人1000円',
+   hist:'札幌的城市轴线，2月正值「札幌冰雪节」主会场（2027年预计2月上旬举办），巨型雪雕沿街铺展。电视塔高90米展望台可俯瞰整条大通公园灯海，是冬夜最经典机位。',
+   near:'地铁「大通」站直达；地下步行街连通札幌站，雪天不用走地面。',
+   wiki:'Sapporo TV Tower winter snow festival', wiki2:'Sapporo Snow Festival Odori'},
+  {id:'SP5',cat:'sapporo',type:'美食',name:'二条市场',lat:43.0580,lng:141.3562,
+   addr:'札幌市中央区南2条東1–2丁目', hours:'约7:00–18:00（因店而异）', fee:'—',
+   hist:'札幌市民的厨房，120年历史的鱼市场。海鲜盖饭、烤蟹腿、海胆现开现吃，比游客区实惠；早上来一碗热腾腾的海鲜丼是冬季绝配。',
+   near:'大通公园步行约5分钟；与狸小路商店街相邻可连逛。',
+   wiki:'Nijo Fish Market Sapporo', wiki2:'Nijo market Sapporo crab'},
+  {id:'SP6',cat:'sapporo',type:'景点',name:'北海道神宫',lat:43.0540,lng:141.3075,
+   addr:'札幌市中央区宮ケ丘474', hours:'境内自由（授与所9:00–16:00）', fee:'免费',
+   hist:'北海道总镇守，1869年奉明治天皇敕命创建。雪中的巨大鸟居与参道肃穆安静，正月余韵未散时来抽一支神签、买御守，是新春旅行最应景的一站。圆山公园侧的古木雪道也很出片。',
+   near:'地铁东西线「円山公園」站步行约15分钟；可与白色恋人公园排同一天（同一条东西线）。',
+   wiki:'Hokkaido Jingu shrine winter', wiki2:'Hokkaido Shrine Sapporo torii'},
+  {id:'SP7',cat:'sapporo',type:'美食',name:'炉ばた焼 ウタリ（炉端烧）',lat:43.0557,lng:141.3510,
+   addr:'札幌市中央区南5条西5丁目', hours:'17:00–23:00（L.O.22:30，周日休）', fee:'人均约300元',
+   hist:'薄野最古老的炉端烧，日剧《First Love 初恋》取景地。番屋风店面中央是千年虾夷松大围炉，女将在面前炭烤喜知次、帆立贝与烤饭团，烟雾缭绕氛围感拉满。全吧台座位不多，强烈建议提前预约并预点喜知次。',
+   near:'地铁南北线「すすきの」站2番出口步行3分钟。'},
+  {id:'SP8',cat:'sapporo',type:'美食',name:'うに専門店 世壱屋（海胆饭）',lat:43.0550,lng:141.3470,
+   addr:'札幌市中央区南5条西6-9-3 ニュー桂和ビル1F', hours:'8:00–14:00（L.O.13:30，周二休）', fee:'五大うに食べ比べ丼 约6500円',
+   hist:'北海道必吃海胆专门店，函馆・余市直送的五大海胆一次吃齐，超级鲜甜，推荐拼金枪鱼的套餐。只能早上去——下午两点就关门，建议当早午餐第一站。',
+   near:'薄野站步行3分钟，与ウタリ相隔一个街区，可早上海胆饭、晚上炉端烧。'},
+  {id:'SP9',cat:'sapporo',type:'酒店',name:'札幌中岛公园普乐美雅酒店',lat:43.0432,lng:141.3519,
+   addr:'札幌市中央区南10条西6丁目1-21', hours:'入住 2/9–2/11（2晚）· 新标准大床房（禁烟）', fee:'已预订 ✅',
+   hist:'本次札幌大本营。紧邻中岛公园，高层房间窗外就是茫茫白雪的园景，夜晚很安静。大堂有免费饮料吧，早餐评价很高。设施是「精致的老派五星」风格，干净规整。',
+   near:'地铁南北线「中島公園」站3号出口步行约4分钟；便利店步行2分钟；步行去薄野、狸小路约10–15分钟。'},
+
+  {id:'OT1',cat:'otaru',type:'景点',name:'小樽运河',lat:43.1977,lng:141.0017,
+   addr:'小樽市港町5（浅草桥一带为经典机位）', hours:'全天（傍晚煤气灯点亮）', fee:'免费',
+   hist:'「北方威尼斯」、《情书》取景地。石造仓库群沿运河排开，雪夜配上63盏煤气灯是全年最美时刻。沿运河往南走就是堺町通商店街，玻璃、八音盒与甜品店连成一条散步线。',
+   near:'JR小樽站步行约10分钟；建议札幌当日往返（快速电车约35分钟）。',
+   wiki:'Otaru Canal winter snow evening', wiki2:'Otaru canal snow'},
+  {id:'OT2',cat:'otaru',type:'景点',name:'天狗山缆车·展望台',lat:43.1678,lng:140.9737,
+   addr:'小樽市最上2丁目（山麓站乘缆车）', hours:'缆车约9:00–21:00（15分钟一班）', fee:'往返成人1800円',
+   hist:'小樽夜景第一名所，北海道三大夜景之一。雪后晴天傍晚上山，城市灯火、石狩湾与雪山一次收齐。⚠建议15:00左右就到山下排队坐缆车，旺季晚去要排长队。',
+   near:'JR小樽站前乘巴士约20分钟到「天狗山」；或出租车约10分钟。'},
+  {id:'OT3',cat:'otaru',type:'景点',name:'小樽八音盒堂·古董博物馆',lat:43.1902,lng:140.9961,
+   addr:'小樽市入船1丁目／住吉町（堺町通尽头）', hours:'9:00–18:00', fee:'免费入场',
+   hist:'本馆是红砖老建筑里的八音盒海洋，2号馆古董博物馆（アンティークミュージアム）藏着超多古董八音盒与自动演奏乐器，工作人员会现场演示能自动弹奏的古董乐器，神奇又治愈。古董控会挪不开脚，联名款玩偶八音盒值得入手。',
+   near:'JR南小樽站步行约5分钟；与堺町通商店街无缝衔接。'},
+  {id:'OT4',cat:'otaru',type:'咖啡',name:'北一硝子三号馆·煤油灯咖啡馆',lat:43.1924,lng:140.9956,
+   addr:'小樽市堺町7-26', hours:'9:00–18:00', fee:'人均约700–1000円',
+   hist:'此行最爱。明治时代石造仓库改建，店内不用一盏电灯，全靠167盏煤油灯照明——挑高屋顶、暗色木梁与星星点点的灯火，像置身星空，短暂隔绝了商业街的喧闹。每天开店时有逐盏点灯的「点灯仪式」，周二至周五下午还有现场钢琴。皇家奶茶软冰淇淋和冰淇淋奶香很浓、不甜，很适合中国胃。',
+   near:'堺町通中段；入口藏在三号馆内侧，别错过。'},
+
+  {id:'NO1',cat:'noboribetsu',type:'景点',name:'登别地狱谷',lat:42.4958,lng:141.1468,
+   addr:'登別市登別温泉町', hours:'全天', fee:'免费',
+   hist:'约1万年前火山喷发形成的爆裂火口遗迹：灰白与褐色岩层间地热蒸汽喷涌，硫磺味扑鼻，450米木栈道深入谷中，仿佛站在地狱入口。夜晚栈道点亮幽暗灯火，就是著名的「鬼火之路」。登别温泉拥有10种泉质，是日本顶级温泉乡。',
+   near:'温泉街步行约5分钟到谷口；道南巴士「登別温泉」终点站下车即是街区。'},
+  {id:'NO2',cat:'noboribetsu',type:'美食',name:'阎魔轩（地狱拉面）',lat:42.4938,lng:141.1429,
+   addr:'登別市登別温泉町76-14', hours:'11:00–15:00（不定休）', fee:'1000–2000円',
+   hist:'以阎魔与地狱为主题的辛辣拉面店，店内有鬼壁画和熊头饰可合影。招牌「阎魔拉面」红油上卧一条红辣椒，汤底浓郁却能喝到见底，像地狱版 laksa。温泉街午餐首选，人气高要排队。',
+   near:'极乐通商店街中段，道南巴士登别温泉终点步行5分钟；顺路可买道产子布丁。'},
+  {id:'NO3',cat:'noboribetsu',type:'温泉酒店',name:'第一泷本馆（住1晚）',lat:42.4932,lng:141.1440,
+   addr:'登別市登別温泉町55', hours:'入住 2/11–2/12（1晚）· 西馆标准日式房；入住15:00／退房10:00', fee:'已预订 ✅',
+   hist:'1858年创业的老铺，泉源直接引自地狱谷，是日本少见的「硫磺泉本流」温泉酒店。全馆多个汤池随便泡，泡到不想出来——虽然每天都弥漫着硫磺味（像鸡蛋混着旺旺雪饼），但真的很幸福。馆内洗护设施一应俱全，对皮肤和关节友好。',
+   near:'地狱谷步行约5分钟；温泉街核心位置。'},
+
+  {id:'TO1',cat:'toya',type:'景点',name:'洞爷湖温泉街',lat:42.5663,lng:140.8236,
+   addr:'虻田郡洞爺湖町洞爺湖温泉', hours:'全天', fee:'免费',
+   hist:'北海道西南部的火山口不冻湖，支笏洞爷国立公园核心。湖面终年不结冰，冬晨雾气升腾如水墨。2月每晚20:30还有「洞爷湖温泉冬花火」，雪中看烟花是此行隐藏惊喜。湖畔足汤与手汤免费。',
+   near:'JR洞爷站乘道南巴士约15分钟到温泉街；酒店多提供折扣券。'},
+  {id:'TO2',cat:'toya',type:'景点',name:'有珠山缆车',lat:42.5552,lng:140.8382,
+   addr:'洞爺湖町有珠山（昭和新山站乘缆车）', hours:'约9:00–17:00（15分钟一班，单程6分钟）', fee:'往返大人2000円、儿童1000円',
+   hist:'俯瞰洞爷湖全景与昭和新山的绝佳方式：登顶后左手是镜面般的洞爷湖与湖中岛，右手是仍在冒烟的昭和新山（1943年地震中平地隆起的活火山）。⚠末班车17:45从昭和新山站出发，千万别错过；很多酒店和游客中心有九折券记得领。',
+   near:'温泉街乘道南巴士到「昭和新山」站下车即是；上车投币，不能用IC卡。'},
+  {id:'TO3',cat:'toya',type:'景点',name:'夕日が浜公园',lat:42.5535,lng:140.7628,
+   addr:'洞爺湖町洞爺町（JR洞爷站直走约5分钟）', hours:'全天', fee:'免费',
+   hist:'等巴士去洞爷湖的空档顺路一拐就是惊喜：雪堆、蓝海、公园木牌与远处的船，海边的冬日通透得不像话。天气好时能隔着内浦湾看到对岸雪山，是拍「北海道海边车站」氛围照的隐藏机位。',
+   near:'JR洞爷站出站直行约5分钟即到海边。'},
+  {id:'TO4',cat:'toya',type:'酒店',name:'洞爷湖万世阁酒店（住1晚）',lat:42.5650,lng:140.8266,
+   addr:'虻田郡洞爷湖町洞爷湖温泉21', hours:'入住 2/12–2/13（1晚）· 中央馆湖景双床房；入住15:00／退房10:00', fee:'已预订 ✅',
+   hist:'温泉街正中心的老字号湖景酒店，房间正对洞爷湖——2月每晚20:30的冬花火在房间里就能看，顶楼露天温泉望湖与羊蹄山。分东馆/本馆(中央馆)/西馆，前台讲解很细。有札幌站北口⇔酒店的接驳巴士「Express洞爷」（单程1100円、完全预约制、仅限住客：去程札幌13:15发→15:45到，返程酒店10:00发→12:30到）。',
+   near:'湖畔足汤、越后屋步行1分钟；道南巴士「洞爷湖温泉」站步行约5分钟。'},
+
+  {id:'HA1',cat:'hakodate',type:'景点',name:'函馆山夜景',lat:41.7593,lng:140.7046,
+   addr:'函館市函館山（山麓缆车站：元町19-7）', hours:'缆车约10:00–21:00', fee:'缆车往返1800円／单程1200円；登山巴士单程700円',
+   hist:'与香港、那不勒斯并称「世界三大夜景」（日本三大夜景之一）。日落前上山，看砂洲两侧灯火逐层点亮、渔船灯火撒进津轻海峡。⚠缆车最经典但人最多，强烈建议提前官网预订，不然现场排队半小时起步；不想挤可从JR函馆站4号站台乘登山巴士直达山顶。',
+   near:'山麓站与元町教会群、八幡坂相邻，可串成傍晚动线。'},
+  {id:'HA2',cat:'hakodate',type:'景点',name:'五棱郭塔',lat:41.7969,lng:140.7537,
+   addr:'函館市五稜郭町43-9', hours:'约9:00–18:00', fee:'成人1200円',
+   hist:'107米高的展望塔，360度俯瞰函馆市景与五棱郭星形城郭全貌——冬季雪后星形轮廓镶着白边，比春天还清晰，夜景尤其出名。塔内有箱馆战争史料陈列。',
+   near:'市电「五稜郭公園前」站步行约10分钟。'},
+  {id:'HA3',cat:'hakodate',type:'景点',name:'五棱郭公园',lat:41.7972,lng:140.7569,
+   addr:'函館市五稜郭町44', hours:'全天（奉行所9:00–17:00）', fee:'公园免费',
+   hist:'日本第一座西洋式城郭，江户幕府1864年建成的星形要塞，箱馆战争最后舞台。护城河冬季结冰积雪，从塔上看是完美的五角星。园内的箱馆奉行所复原建筑值得一看。',
+   near:'与五棱郭塔一体游览；市电可达。'},
+  {id:'HA4',cat:'hakodate',type:'景点',name:'八幡坂·元町坡道群',lat:41.7646,lng:140.7118,
+   addr:'函館市末広町（八幡坂）', hours:'全天', fee:'免费',
+   hist:'函馆因众多坡道被称为「坂之城」：笔直的八幡坂从山脚一路通向港口，尽头是停泊的青函联络船摩周丸，雪后像电影海报。推荐走法：基坂→日和坂→八幡坂→大三坂→二十间坂→函馆山缆车站→谷地坂→护国神社坂→あさり坂，缆车站是分界线，前后两段各半天。',
+   near:'市电「十字街」站步行约5分钟；紧邻元町教会群。'},
+  {id:'HA5',cat:'hakodate',type:'景点',name:'金森红砖仓库',lat:41.7661,lng:140.7154,
+   addr:'函館市末広町14-12', hours:'商铺约9:30–19:00', fee:'免费',
+   hist:'1909年建成的红砖仓库群，函馆港开埠象征，如今是纪念品与杂货的集合地，挺好逛。推荐找北海道长尾山雀（シマエナガ）钥匙扣，做工很好还能现场刻字。傍晚仓库群亮灯配雪景极出片。',
+   near:'八幡坂下坡步行约5分钟；幸运小丑汉堡就在旁边。'},
+  {id:'HA6',cat:'hakodate',type:'景点',name:'特拉皮斯特大修道院',lat:41.8067,lng:140.8270,
+   addr:'函館市上湯川町346', hours:'外观自由参观（内部不开放）', fee:'免费',
+   hist:'1898年法国传教士建立的日本第一座男子修道院，罗马式砖造建筑藏在笔直的杉木参道尽头，雪落无声，肃穆得像北欧。⚠位置较偏远、班次少，建议预留半天，参观保持安静。',
+   near:'函馆巴士「トラピスト入口」下车步行约15分钟；可与汤之川温泉顺游。'},
+  {id:'HA7',cat:'hakodate',type:'美食',name:'幸运小丑汉堡（Lucky Pierrot）',lat:41.7678,lng:140.7192,
+   addr:'函館市末広町23-18（ベイエリア本店，分店众多）', hours:'约10:00–22:00（因店而异）', fee:'汉堡约400–900円',
+   hist:'只在函馆才有的传奇汉堡店，多次获评「全日本最好吃汉堡」。必点中华风炸鸡汉堡——酸甜酱汁+嫩滑鸡腿肉，年销50万份，是函馆的灵魂美食。小丑彩绘的店面本身就是打卡点，《名侦探柯南》剧场版也来取过景。',
+   near:'金森红砖仓库旁；菜单有中文，招牌套餐880円。'},
+  {id:'HA8',cat:'hakodate',type:'美食',name:'函馆朝市',lat:41.7726,lng:140.7264,
+   addr:'函館市若松町9-19', hours:'约5:00–14:00（因店而异）', fee:'—',
+   hist:'250多家店铺的海港早市，活鱿鱼现钓现切、海胆盖饭、烤扇贝与毛蟹云集。离开函馆前的最后一顿就交给这里，一碗五色海鲜盖饭配味噌汤，为行程收尾。',
+   near:'JR函馆站西口步行约1分钟。',
+   wiki:'Hakodate morning market seafood', wiki2:'Hakodate Asaichi market'},
+  {id:'HA9',cat:'hakodate',type:'酒店',name:'函馆JR旅馆（住2晚）',lat:41.7735,lng:140.7272,
+   addr:'函馆市若松町12-14（JR函馆站直通）', hours:'入住 2/13–2/15（2晚）· 双床房；入住15:00／退房10:00', fee:'已预订 ✅',
+   hist:'2020年开业，与JR函馆站直通——下雪天不用拖行李走雪地，这点太重要了。一楼有十几种枕头的自选区，顶楼有大浴场和能看函馆山的休息室，早餐的海鲜回转寿司很有名。对面就是函馆朝市，2/15 早上去朝市吃收官海鲜饭再赶飞机正合适。',
+   near:'函馆朝市步行2分钟；市电「函馆站前」步行3分钟；7-11 步行3分钟。'},
+  {id:'OSK1',cat:'osaka',type:'酒店',name:'关西机场日航酒店（大阪中转）',lat:34.4344,lng:135.2457,
+   addr:'大阪府泉佐野市泉州空港北1番地（关西机场T1直连）', hours:'入住 2/8、2/15–2/16 · 经济舱双床房（已预订✅）', fee:'已预订 ✅',
+   hist:'关西机场岛内的日航酒店，与T1航站楼直连，深夜抵达、清晨转机都不用出机场大楼。2/8 晚 NH976 落地 22:00 直接入住，次日去神户机场转 NH577 飞札幌；2/15 晚从北海道飞回大阪后再住一晚，2/16 早班 NH973 回家——两晚都不用早起赶路。',
+   near:'JR/南海「关西机场站」步行约3分钟；2/16 早班机 9:00 起飞，7 点出酒店都来得及。'},
+];
+const ITINERARY = [
+  {d:'2/8 周一', items:[
+    {icon:'✈️', t:'NH976 上海浦东T2 19:05 → 大阪关西T1 22:00（1小时55分）'},
+    {icon:'🏨', t:'关西机场日航酒店（住1晚，T1直连）', spot:'OSK1'}]},
+  {d:'2/9 周二', items:[
+    {icon:'✈️', t:'NH577 大阪神户 08:40 → 札幌新千岁 10:30（1小时50分）'},
+    {icon:'🏨', t:'札幌中岛公园普乐美雅酒店（连住2晚）', spot:'SP9'},
+    {icon:'❄️', t:'下午：北海道大学 / 大通公园冰雪节'}]},
+  {d:'2/10 周三', items:[
+    {icon:'🚃', t:'小樽当日往返（JR快速约35分钟）'},
+    {icon:'🕯️', t:'小樽运河 → 八音盒堂 → 煤油灯咖啡馆 → 天狗山夜景'}]},
+  {d:'2/11 周四', items:[
+    {icon:'🚃', t:'札幌 → 登别'},
+    {icon:'🏨', t:'第一滝本馆（住1晚）· 泡硫磺泉', spot:'NO3'},
+    {icon:'♨️', t:'傍晚地狱谷「鬼火之路」'}]},
+  {d:'2/12 周五', items:[
+    {icon:'🚃', t:'登别 → 洞爷'},
+    {icon:'🏨', t:'洞爷湖万世阁酒店（住1晚）', spot:'TO4'},
+    {icon:'🎆', t:'20:30 洞爷湖冬花火（房间湖景可看）'}]},
+  {d:'2/13 周六', items:[
+    {icon:'🚃', t:'洞爷 → 函馆'},
+    {icon:'🏨', t:'函馆JR旅馆（连住2晚）', spot:'HA9'},
+    {icon:'🌃', t:'傍晚：八幡坂 → 函馆山夜景'}]},
+  {d:'2/14 周日', items:[
+    {icon:'⭐', t:'函馆一日：五棱郭塔 → 金森红砖仓库 → 小丑汉堡'}]},
+  {d:'2/15 周一', items:[
+    {icon:'🦀', t:'早上函馆朝市收官海鲜饭'},
+    {icon:'✈️', t:'NH578 札幌新千岁 18:30 → 大阪神户 20:30（2小时）'},
+    {icon:'🏨', t:'关西机场日航酒店（住1晚）', spot:'OSK1'}]},
+  {d:'2/16 周二', items:[
+    {icon:'✈️', t:'NH973 大阪关西T1 09:00 → 上海浦东T2 11:00（3小时）· 回家'}]},
+];
+const TRIP_ROUTE = ['AP1','SP1','OT1','NO1','TO1','HA1'];
+const RETURN_ROUTE = ['HA1','AP1'];
+
+// ---------- 地图（升龙同款配置：Esri 默认 + fitBounds + 无多余图层）----------
+const map = L.map('map', {zoomControl:true, tap:true, zoomSnap:.5,
+  zoomAnimation:true, fadeAnimation:false, markerZoomAnimation:false, updateWhenZooming:false});
+map.zoomControl.setPosition('bottomright');
+
+const baseLayers = {
+  'Esri 街道图（默认）': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:18, keepBuffer:4, updateWhenZooming:false, detectRetina:false, attribution:'© Esri, HERE, Garmin'}),
+  'Esri 地形图': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:18, keepBuffer:4, updateWhenZooming:false, detectRetina:false, attribution:'© Esri, USGS'}),
+  'CARTO 探索风': L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    {subdomains:'abcd', maxZoom:19, keepBuffer:4, updateWhenZooming:false, detectRetina:false, attribution:'© CARTO'}),
+  'OSM 全球标准': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {subdomains:'abc', maxZoom:19, keepBuffer:4, updateWhenZooming:false, detectRetina:false, attribution:'© OpenStreetMap'}),
+  '高德（仅中国境内有内容）': L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+    {subdomains:['1','2','3','4'], maxZoom:18, keepBuffer:4, detectRetina:false, attribution:'© AutoNavi'}),
+};
+const BASE_ORDER = ['Esri 街道图（默认）','Esri 地形图','CARTO 探索风','OSM 全球标准','高德（仅中国境内有内容）'];
+let baseIdx = 0;
+baseLayers[BASE_ORDER[0]].addTo(map);
+L.control.layers(baseLayers, null, {position:'bottomright', collapsed:true}).addTo(map);
+
+// 出图看门狗：3.5 秒没图就换下一个源
+let tileOk = 0, tries = 0, userPicked = false, probing = false, autoSwitching = false;
+map.on('tileload', function(){
+  if(++tileOk >= 2){ const t = document.getElementById('tip'); if(t) t.style.display='none'; }
+});
+function switchBase(){
+  if(tries >= 2){ showWarn(); return; }
+  probing = true; tries++;
+  const cur = BASE_ORDER[baseIdx];
+  baseIdx = (baseIdx + 1) % BASE_ORDER.length;
+  autoSwitching = true;
+  map.removeLayer(baseLayers[cur]);
+  baseLayers[BASE_ORDER[baseIdx]].addTo(map);
+  autoSwitching = false;
+  tileOk = 0;
+  setTimeout(function(){ probing = false; }, 5000);
+}
+const watchdog = setInterval(function(){
+  if(userPicked || tileOk >= 2){ clearInterval(watchdog); return; }
+  if(probing) return;
+  switchBase();
+}, 3500);
+map.on('baselayerchange', function(){
+  if(!autoSwitching){ userPicked = true; clearInterval(watchdog); }
+  hideTip();
+});
+setTimeout(function(){
+  // 以页面上实际渲染的瓦片数为准（缓存命中时 tileload 事件可能不触发）
+  if(tileOk === 0 && document.querySelectorAll('.leaflet-tile-loaded').length === 0) showWarn();
+}, 9000);
+function showWarn(){
+  const t = document.getElementById('tip');
+  t.className = 'warn'; t.textContent = '底图加载不出来？点右下角 🗺 换一个底图试试';
+  t.style.display = 'block';
+}
+function hideTip(){ const t = document.getElementById('tip'); t.style.display='none'; }
+
+// ---------- 标记与路线 ----------
+const POP_OPT = {maxWidth:250, minWidth:230, autoPanPadding:[26,26], closeButton:true};
+const markers = {};
+function iconHTML(s){
+  return L.divIcon({className:'', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-14],
+    html:`<div style="width:28px;height:28px;border-radius:50%;background:${CATS[s.cat].color};color:#fff;
+      font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;
+      border:2px solid #fff;outline:1px solid rgba(15,23,42,.35)">${s.id}</div>`});
+}
+function popupHTML(s){
+  const img = HAS_PHOTO.has(s.id)
+    ? `<img class="pop-img" src="${THUMB_DIR + s.id}.jpg" data-full="${PHOTO_DIR + s.id}.jpg" alt="${s.name}">`
+    : `<div class="pop-img-ph">${CATS[s.cat].icon}</div>`;
+  return `<div>${img}<div class="pop-bd">
+    <div class="pop-nm"><span class="pb" style="background:${CATS[s.cat].color}">${s.id}</span>${s.name}</div>
+    <div class="row"><b>类型</b> ${s.type}　<b>门票</b> ${s.fee}</div>
+    <div class="row"><b>地址</b> ${s.addr}</div>
+    <div class="row"><b>时间</b> ${s.hours}</div>
+    <div class="hist">${s.hist}</div>
+    <div class="near">📍 ${s.near}</div>
+    <button class="cp" data-coord="${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}">🧭 点这里复制坐标 ${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</button>
+  </div></div>`;
+}
+function bindPop(m, s){
+  m.on('click', function(){
+    m.bindPopup(popupHTML(s), POP_OPT).openPopup();
+    const pi = document.querySelector('.pop-img'); if(pi) pi.onclick = ()=>openLB(pi.dataset.full);
+    const cp = document.querySelector('.cp'); if(cp) cp.onclick = ()=>copyCoord(cp);
+  });
+}
+SPOTS.forEach(s=>{ const m = L.marker([s.lat,s.lng],{icon:iconHTML(s)}).addTo(map); bindPop(m, s); markers[s.id]=m; });
+
+function line(ids, color, dash){
+  const pts = ids.map(id=>{const s=SPOTS.find(x=>x.id===id); return [s.lat,s.lng];});
+  L.polyline(pts,{color:color, weight:4, opacity:.85, dashArray:dash, lineJoin:'round'}).addTo(map);
+}
+line(TRIP_ROUTE, '#2563EB', null);
+line(RETURN_ROUTE, '#94A3B8', '8,7');
+
+// 视野只包北海道（大阪酒店偏远，从行程面板点开即可，免得把地图缩太小）
+const hk = SPOTS.filter(s=>s.cat !== 'osaka');
+map.fitBounds(L.latLngBounds(hk.map(s=>[s.lat,s.lng])).pad(0.10));
+
+// ---------- 复制坐标 ----------
+function copyCoord(el){
+  const t = el.getAttribute('data-coord');
+  const done = ()=>{ const o = el.dataset.t || el.textContent; el.textContent = '✅ 已复制 ' + t;
+    setTimeout(()=>{ el.textContent = o; }, 1600); };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done).catch(fb); else fb();
+  function fb(){
+    const ta = document.createElement('textarea'); ta.value = t;
+    ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+// ---------- 灯箱 ----------
+const lb = document.getElementById('lb'), lbImg = document.getElementById('lbImg'), lbLd = lb.querySelector('.ld');
+function openLB(src){
+  if(!src) return;
+  lb.classList.add('show'); lbImg.style.display='none'; lbLd.style.display='block'; lbLd.textContent='大图加载中…';
+  lbImg.onload = ()=>{ lbLd.style.display='none'; lbImg.style.display='block'; };
+  lbImg.onerror = ()=>{ lbLd.textContent = '这张图暂时加载不出来'; };
+  lbImg.src = src;
+}
+lb.onclick = ()=>{ lb.classList.remove('show'); lbImg.removeAttribute('src'); };
+
+// ---------- 行程 / 分享 ----------
+document.getElementById('itnList').innerHTML = ITINERARY.map(d=>
+  `<div class="itn-day"><div class="dt">${d.d}</div>${d.items.map(it=>
+    `<div class="it${it.spot?' spot':''}" ${it.spot?`data-spot="${it.spot}"`:''}>${it.icon} ${it.t}${it.spot?' →':''}</div>`).join('')}</div>`).join('');
+document.querySelectorAll('.it.spot').forEach(el=>{
+  el.onclick = ()=>{
+    const s = SPOTS.find(x=>x.id === el.dataset.spot); if(!s) return;
+    document.getElementById('itn').classList.remove('show');
+    map.flyTo([s.lat,s.lng], 14, {duration:.8});
+    setTimeout(()=>{ markers[s.id].openPopup(); }, 900);
+  };
+});
+const itn = document.getElementById('itn'), sh = document.getElementById('sh');
+document.getElementById('bI').onclick = ()=> itn.classList.add('show');
+document.getElementById('itnClose').onclick = ()=> itn.classList.remove('show');
+itn.onclick = e=>{ if(e.target === itn) itn.classList.remove('show'); };
+document.getElementById('bS').onclick = ()=>{
+  const q = document.getElementById('shQr');
+  if(q.dataset.src){ q.src = q.dataset.src; q.removeAttribute('data-src'); }
+  sh.classList.add('show');
+};
+document.getElementById('shClose').onclick = ()=> sh.classList.remove('show');
+sh.onclick = e=>{ if(e.target === sh) sh.classList.remove('show'); };
+</script>
+</body>
+</html>
