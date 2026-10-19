@@ -7,119 +7,254 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0D1B2E">
 <title>2027 新春北海道 · 雪国巡礼地图</title>
-<meta name="description" content="2027 新春北海道行程地图：2/8–2/16，新千岁→札幌→小樽→登别→洞爷→函馆，31 处地点含实拍照片、地址、营业时间与攻略贴士。">
+<meta name="description" content="2027 新春北海道行程地图：2/8–2/16 大阪中转，新千岁→札幌→小樽→登别→洞爷→函馆，31 处地点含实拍照片、航班酒店、攻略贴士与可复制导航坐标。">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="雪国巡礼地图">
 <meta property="og:title" content="2027 新春北海道 · 雪国巡礼地图">
-<meta property="og:description" content="9天8晚 · 31 处地点 · 实拍照片 · 航班酒店">
+<meta property="og:description" content="9天8晚 · 31 处地点 · 实拍照片 · 航班酒店 · 一键复制导航坐标">
 <meta property="og:image" content="https://linkbread.github.io/hokkaido-2027-map/og-image.jpg">
 <meta property="og:url" content="https://linkbread.github.io/hokkaido-2027-map/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="dns-prefetch" href="https://server.arcgisonline.com">
-<link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
+<link rel="dns-prefetch" href="https://tile.openstreetmap.org">
+<link rel="dns-prefetch" href="https://basemaps.cartocdn.com">
+<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
+<link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin>
 <link rel="stylesheet" href="leaflet.css">
 <script src="leaflet.js"></script>
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/228/93.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/228/94.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/228/95.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/228/96.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/229/93.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/229/94.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/229/95.png">
+<link rel="preload" as="image" href="https://a.basemaps.cartocdn.com/rastertiles/voyager/8/229/96.png">
 <style>
+  :root{
+    --airport:#64748B; --sapporo:#2563EB; --otaru:#0E9594;
+    --noboribetsu:#E63946; --toya:#0891B2; --hakodate:#EA580C;
+    --panel:#ffffff; --ink:#222633; --muted:#6b7280; --line:#e5e7eb;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bot:env(safe-area-inset-bottom,0px);
+  }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;overflow:hidden;background:#dfe5ec;
-    font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;color:#222633}
+  html,body{margin:0;height:100%;font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;color:var(--ink);overflow:hidden;background:#eef1f5}
+  #app{position:relative;height:100%;width:100%;overflow:hidden}
   #map{position:absolute;inset:0;z-index:1;background:#dfe5ec}
 
-  /* 顶部细条：无毛玻璃，纯半透明实色，移动端不掉帧 */
-  #bar{position:absolute;top:0;left:0;right:0;z-index:800;display:flex;align-items:center;gap:8px;
-    padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;
-    background:rgba(255,255,255,.92);border-bottom:1px solid rgba(15,23,42,.08)}
-  #bar .t{font-size:14px;font-weight:700;letter-spacing:.3px;flex:1;
+  /* ---------- 顶部标题条 ---------- */
+  #topbar{position:absolute;top:0;left:0;right:0;z-index:900;height:calc(50px + var(--safe-top));
+    padding:var(--safe-top) 10px 0;display:flex;align-items:center;gap:8px;
+    background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.82));
+    /* 移动端不用 backdrop-filter：地图平移时每帧模糊会明显掉帧，改半透明实色 */
+    border-bottom:1px solid rgba(0,0,0,.07)}
+  #topbar .tt{font-size:15px;font-weight:700;line-height:1.15;flex:1;min-width:0;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #bar .b{border:1px solid #d7dce3;background:#fff;border-radius:999px;padding:6px 12px;
-    font-size:12px;font-weight:600;color:#1e3a5f;cursor:pointer;white-space:nowrap}
+  #topbar .tt .s{display:block;font-size:10.5px;font-weight:400;color:var(--muted);margin-top:1px}
+  .tbtn{height:34px;padding:0 11px;border:1px solid #d6dae1;background:#fff;border-radius:9px;
+    font-size:12.5px;cursor:pointer;color:#222;display:flex;align-items:center;gap:4px;flex:0 0 auto}
+  .tbtn:active{background:#eef1f5}
+  .tbtn.on{background:#2563eb;color:#fff;border-color:#2563eb}
 
-  /* 弹窗 */
-  .leaflet-popup-content-wrapper{border-radius:12px!important;overflow:hidden;
-    box-shadow:0 6px 20px rgba(0,0,0,.18)!important}
-  .leaflet-popup-content{margin:0!important;width:250px!important}
-  .pop-img{width:100%;height:140px;object-fit:cover;display:block;background:#e9eef4}
-  .pop-img-ph{height:120px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#9aa5b1;background:#eef2f6}
-  .pop-bd{padding:10px 12px 12px}
-  .pop-nm{font-size:14px;font-weight:700;line-height:1.35;margin-bottom:6px}
-  .pb{display:inline-block;color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:5px;vertical-align:1px}
-  .tt{font-size:10px;color:#6b7280;border:1px solid #d7dce3;border-radius:4px;padding:0 4px}
-  .row{font-size:11.5px;color:#4b5563;line-height:1.6}
-  .row b{color:#374151;font-weight:600}
-  .hist{font-size:11.5px;color:#4b5563;line-height:1.65;margin-top:6px;
-    background:#f6f8fa;border-radius:8px;padding:7px 9px}
-  .near{font-size:11px;color:#6b7280;margin-top:6px}
-  .cp{display:block;width:100%;margin-top:9px;border:none;border-radius:8px;background:#1e3a5f;
-    color:#fff;font-size:12px;font-weight:600;padding:9px 0;cursor:pointer}
-  .leaflet-popup-close-button{width:26px!important;height:26px!important;font-size:18px!important;color:#fff!important}
+  /* ---------- 抽屉 ---------- */
+  #sidebar{position:absolute;top:0;left:0;bottom:0;width:92%;max-width:400px;background:var(--panel);
+    display:flex;flex-direction:column;overflow:hidden;z-index:1200;
+    transform:translateX(-102%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:2px 0 18px rgba(0,0,0,.22)}
+  #sidebar.open{transform:translateX(0)}
+  #scrim{position:absolute;inset:0;background:rgba(15,23,42,.42);z-index:1100;opacity:0;pointer-events:none;transition:opacity .28s}
+  #scrim.show{opacity:1;pointer-events:auto}
+  #side-head{padding:calc(12px + var(--safe-top)) 16px 12px;border-bottom:1px solid var(--line);position:relative}
+  #side-head h1{font-size:17px;margin:0 0 4px;padding-right:34px}
+  #side-head .sub{font-size:11.5px;color:var(--muted);line-height:1.6}
+  #side-close{position:absolute;top:calc(12px + var(--safe-top));right:12px;width:32px;height:32px;border:none;
+    background:#f0f1f4;border-radius:9px;font-size:17px;cursor:pointer;color:#666;line-height:1}
+  #side-close:active{background:#e2e5ea}
+  #legend{display:flex;flex-wrap:wrap;gap:6px;padding:9px 16px;border-bottom:1px solid var(--line)}
+  .lg{display:flex;align-items:center;gap:5px;font-size:11px;color:#444}
+  .lg .d{width:11px;height:11px;border-radius:50%}
+  #filters{padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line)}
+  .chip{font-size:11px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:#f7f8fa;cursor:pointer;user-select:none}
+  .chip.off{opacity:.4;text-decoration:line-through}
+  #list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 10px calc(16px + var(--safe-bot))}
+  .group-title{font-size:12px;font-weight:700;margin:12px 6px 6px;letter-spacing:.5px}
+  .card{display:flex;gap:10px;padding:9px;border-radius:12px;cursor:pointer;background:#fff}
+  .card:active{background:#eef2f7}
+  .card .thumb{width:80px;height:62px;flex:0 0 80px;border-radius:9px;object-fit:cover;background:#e9edf2;overflow:hidden}
+  .card .thumb img{width:100%;height:100%;object-fit:cover}
+  .thumb-ph,.pop-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+    font-size:26px;color:#fff;background:linear-gradient(135deg,#9fb4d0,#5b7395)}
+  .pop-img-ph{height:132px;border-radius:8px;margin-bottom:8px;font-size:32px}
+  .card .info{min-width:0;flex:1}
+  .card .nm{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .card .nm .badge{font-size:10px;color:#fff;border-radius:5px;padding:1px 5px;font-weight:700;flex:0 0 auto}
+  .card .nm .tt{font-size:9.5px;color:#666;background:#eef1f5;border-radius:4px;padding:1px 4px;font-weight:500}
+  .card .meta{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .hist{font-size:11.5px;color:#555;margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  #side-foot{border-top:1px solid var(--line);padding:10px 16px calc(12px + var(--safe-bot));background:#fafbfd}
+  #side-foot .fbtn{display:block;width:100%;text-align:center;padding:10px;border-radius:10px;
+    background:#16324F;color:#fff;font-size:13px;font-weight:600;margin-bottom:8px}
+  #side-foot .fbtn:active{background:#0f2540}
+  #side-foot .tip{font-size:10.5px;color:var(--muted);line-height:1.6}
 
-  /* 提示条 */
-  #tip{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:50%;
-    transform:translateX(-50%);z-index:900;background:#e8f1fb;border:1px solid #9dc4ea;color:#1e4b7a;
-    border-radius:10px;padding:7px 13px;font-size:12px;display:none;max-width:86%;text-align:center}
-  #tip.warn{background:#fff3cd;border-color:#ffc107;color:#856404}
+  /* ---------- 弹窗 ---------- */
+  .leaflet-popup-content-wrapper{border-radius:14px}
+  .leaflet-popup-content{margin:12px 13px;line-height:1.5}
+  .leaflet-container a.leaflet-popup-close-button{width:30px;height:30px;font-size:22px;padding:4px 0 0;color:#888}
+  .pop{width:100%}
+  .pop img{width:100%;height:132px;object-fit:cover;border-radius:8px;margin-bottom:8px;background:#eee;display:block}
+  .pop .pt{font-size:15px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-right:18px}
+  .pop .pb{font-size:10px;color:#fff;border-radius:5px;padding:1px 6px;font-weight:700}
+  .pop .row{font-size:12px;color:#444;margin:3px 0;word-break:break-word}
+  .pop .row b{color:#222}
+  .pop .hist{font-size:12.5px;color:#333;line-height:1.6;margin-top:7px}
+  .pop .near{font-size:11.5px;color:#0b6b45;background:#eafaf1;border-radius:8px;padding:6px 8px;margin-top:7px;line-height:1.5}
+  .pop .coord{font-size:11.5px;color:#2563eb;background:#eef4ff;border-radius:8px;padding:7px 8px;margin-top:7px;text-align:center;font-weight:600}
+  .pop .coord:active{background:#dbe8ff}
 
-  /* 灯箱：点图看大图 */
-  #lb{position:absolute;inset:0;z-index:2000;background:rgba(6,11,20,.94);display:none;
-    flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
+  /* ---------- 行程总览弹层 ---------- */
+  /* 大图灯箱 */
+  #lb{position:absolute;inset:0;z-index:2200;background:rgba(6,11,20,.94);display:none;
+    flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:14px}
   #lb.show{display:flex}
-  #lb img{max-width:100%;max-height:82%;border-radius:10px;display:none}
-  #lb .ld{color:#cbd5e1;font-size:13px}
-  #lb .x{padding:9px 26px;border:none;border-radius:999px;background:#fff;color:#16324F;font-size:14px;font-weight:600}
+  #lb img{max-width:100%;max-height:82%;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.55);display:none}
+  #lb .lb-load{color:#cbd5e1;font-size:13px}
+  #lb .lb-x{padding:9px 26px;border:none;border-radius:999px;background:#fff;color:#16324F;font-size:14px;font-weight:600;cursor:pointer}
+  img.zoomable{cursor:zoom-in}
+  .pop-img-ph .ph-tip{font-size:11px;color:#9ca3af;margin-left:6px;font-weight:400}
+  #ovl{position:absolute;inset:0;z-index:2000;background:rgba(8,14,24,.9);display:none;
+    flex-direction:column;align-items:center;justify-content:center;padding:16px}
+  #ovl.show{display:flex}
+  #ovl .box{width:100%;max-width:560px;max-height:calc(100% - 70px);overflow:auto;-webkit-overflow-scrolling:touch;border-radius:12px;background:#fff}
+  #ovl .cb{margin-top:14px;padding:9px 22px;border:none;border-radius:999px;background:#fff;color:#16324F;
+    font-size:14px;font-weight:600;cursor:pointer}
+  .itin-box{padding:16px 14px}
+  .itn-head{font-size:16px;font-weight:700;text-align:center;margin-bottom:8px;color:#16324F}
+  .itn-day{display:flex;gap:10px;padding:8px 4px;border-top:1px dashed #e5e7eb}
+  .itn-day:first-of-type{border-top:none}
+  .itn-day .dt{flex:0 0 66px;font-size:12.5px;font-weight:700;color:#2563eb;padding-top:2px;line-height:1.4}
+  .itn-day .its{flex:1;min-width:0}
+  .itn-it{font-size:12.5px;line-height:1.55;color:#333;padding:2px 0;word-break:break-word}
+  .itn-it.spot{border-radius:6px}
+  .itn-it.spot:active{background:#f0f4ff}
+  .itn-it .go{color:#2563eb;font-size:11px}
+  .itn-note{font-size:11px;color:#856404;background:#fff8e1;border-radius:8px;padding:8px 10px;margin-top:10px;line-height:1.5}
 
-  /* 行程 / 分享 面板 */
-  .modal{position:absolute;inset:0;z-index:1900;background:rgba(8,14,24,.9);display:none;
-    align-items:center;justify-content:center;padding:16px}
-  .modal.show{display:flex}
-  .mbox{width:100%;max-width:520px;max-height:82%;overflow:auto;-webkit-overflow-scrolling:touch;
-    background:#fff;border-radius:14px;padding:16px 18px}
-  .mbox h3{margin:0 0 12px;font-size:15px}
-  .itn-day{margin-bottom:12px}
-  .dt{font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:4px}
-  .it{font-size:12.5px;color:#374151;line-height:1.9}
-  .it.spot{color:#1d4ed8;font-weight:600;cursor:pointer}
-  .note{font-size:11px;color:#856404;background:#fff8e1;border-radius:8px;padding:8px 10px;margin-top:10px;line-height:1.6}
-  .mclose{display:block;width:100%;margin-top:12px;border:none;border-radius:999px;background:#1e3a5f;
-    color:#fff;font-size:14px;font-weight:600;padding:10px 0}
-  #shQr{width:220px;height:220px;display:block;margin:0 auto 10px}
-  .sh-url{font-size:11px;color:#1d4ed8;text-align:center;word-break:break-all;margin-bottom:10px}
+  /* ---------- 分享二维码弹层 ---------- */
+  #share{position:absolute;inset:0;z-index:2100;background:rgba(8,14,24,.9);display:none;
+    flex-direction:column;align-items:center;justify-content:center;padding:20px}
+  #share.show{display:flex}
+  .sh-box{width:100%;max-width:340px;background:#fff;border-radius:14px;padding:18px 16px;text-align:center}
+  .sh-t{font-size:15px;font-weight:700;color:#16324F;margin-bottom:12px}
+  .sh-box img{width:220px;height:220px;display:block;margin:0 auto}
+  .sh-u{font-size:11.5px;color:#2563eb;word-break:break-all;margin-top:10px;line-height:1.4}
+  .sh-copy{margin-top:10px;padding:8px 18px;border:none;border-radius:999px;background:#16324F;color:#fff;
+    font-size:13px;font-weight:600;cursor:pointer}
+  .sh-copy:active{background:#0f2540}
+  .sh-tip{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}
+
+  #tileLoading,#tileHint{position:absolute;bottom:calc(16px + var(--safe-bot));left:50%;transform:translateX(-50%);z-index:900;
+    background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:8px 14px;font-size:12px;color:#856404;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;max-width:88%;text-align:center;line-height:1.5}
+  #tileLoading{display:block;background:#e8f1fb;border-color:#9dc4ea;color:#1e4b7a}
   .leaflet-control-layers{border-radius:10px!important;box-shadow:0 2px 8px rgba(0,0,0,.15)!important}
   .leaflet-control-layers-toggle{background-image:none!important;width:36px!important;height:36px!important;
     display:flex!important;align-items:center;justify-content:center;font-size:18px}
   .leaflet-control-layers-toggle::before{content:'🗺'}
   .leaflet-control-layers-expanded label{font-size:12px;margin:4px 0}
+
+  /* 桌面：抽屉默认展开、不遮挡 */
+  @media(min-width:861px){
+    #topbar{display:none}
+    #sidebar{transform:none;max-width:390px;box-shadow:1px 0 12px rgba(0,0,0,.10)}
+    #scrim{display:none!important}
+    #side-close{display:none}
+    #side-head h1{padding-right:0}
+  }
 </style>
 </head>
 <body>
+<div id="app">
+  <div id="map"></div>
 
-<div id="map"></div>
+  <div id="topbar">
+    <button class="tbtn" id="bMenu">☰ 行程</button>
+    <div class="tt">2027 新春北海道<span class="s">雪国巡礼地图 · <span id="cnt2">0</span> 处地点</span></div>
+    <button class="tbtn on" id="bTripM">路线</button>
+    <button class="tbtn" id="bOvlM">总览</button>
+  </div>
 
-<div id="bar">
-  <div class="t">❄️ 2027 新春北海道 · 雪国巡礼</div>
-  <button class="b" id="bI">✈️ 行程</button>
-  <button class="b" id="bS">📲 分享</button>
+  <div id="scrim"></div>
+  <aside id="sidebar">
+    <div id="side-head">
+      <button id="side-close">✕</button>
+      <h1>2027 新春北海道 · 雪国巡礼地图</h1>
+      <div class="sub">2/8 上海出发 · 2/16 返回（9天8晚，大阪中转）<br>新千岁 → 札幌 → 小樽 → 登别 → 洞爷 → 函馆<br>点卡片看实拍照片与攻略 · 共 <span id="cnt">0</span> 处</div>
+    </div>
+    <div id="legend"></div>
+    <div id="filters"></div>
+    <div id="list"></div>
+    <div id="side-foot">
+      <button class="fbtn" id="bOvl">✈️ 查看行程总览（航班 · 酒店 · 路线）</button>
+      <button class="fbtn" id="bShare" style="background:#2563EB">📲 分享二维码（微信扫码打开）</button>
+      <div class="tip">建议购买「JR 北海道铁路周游券」，札幌⇌小樽当日往返，登别/洞爷/函馆串成南线。<br>坐标为 WGS-84，弹窗内点坐标即可复制，粘贴到 Google/Apple 地图导航。</div>
+    </div>
+  </aside>
+
+  <div id="ovl">
+    <div class="box itin-box">
+      <div class="itn-head">✈️ 行程总览 · 2/8 – 2/16（9天8晚）</div>
+      <div id="itnList"></div>
+      <div class="itn-note">⚠️ NH577 / NH578 / NH973 有「航班调整」通知，出发前请再确认时刻；2/8 晚抵达关西机场后住日航酒店（T1直连），次日从神户机场转机飞札幌。</div>
+    </div>
+    <button class="cb" id="ovlClose">关闭</button>
+  </div>
+
+  <div id="tileLoading">🗺 地图加载中…</div>
+  <div id="tileHint" style="display:none">底图加载不出来？点右下角 🗺 切换其他底图（推荐 CARTO / 地理院）</div>
+
+  <div id="lb"><div class="lb-load">大图加载中…</div><img id="lbImg" alt="大图"><button class="lb-x">关闭</button></div>
+
+  <div id="share">
+    <div class="sh-box">
+      <div class="sh-t">📲 微信扫码打开这张地图</div>
+      <img id="shQr" alt="地图二维码" data-src="share_qr.png">
+      <div class="sh-u" id="shUrl">https://linkbread.github.io/hokkaido-2027-map/</div>
+      <button class="sh-copy" id="shCopy">复制链接</button>
+      <div class="sh-tip">把这张二维码截图发给同伴，微信 / 相机扫一扫都能直接打开（永久链接，不会失效）</div>
+    </div>
+    <button class="cb" id="shClose">关闭</button>
+  </div>
 </div>
 
-<div id="tip">🗺 地图加载中…</div>
-
-<div id="lb"><div class="ld">大图加载中…</div><img id="lbImg" alt="大图"><button class="x">关闭</button></div>
-
-<div class="modal" id="itn"><div class="mbox">
-  <h3>✈️ 行程总览 · 2/8 – 2/16（9天8晚）</h3>
-  <div id="itnList"></div>
-  <div class="note">⚠️ NH577 / NH578 / NH973 有「航班调整」通知，出发前请再确认时刻。</div>
-  <button class="mclose" id="itnClose">关闭</button>
-</div></div>
-
-<div class="modal" id="sh"><div class="mbox">
-  <h3 style="text-align:center">📲 微信扫码打开这张地图</h3>
-  <img id="shQr" alt="地图二维码" data-src="share_qr.png">
-  <div class="sh-url">https://linkbread.github.io/hokkaido-2027-map/</div>
-  <button class="mclose" id="shClose">关闭</button>
-</div></div>
-
 <script>
-const HAS_PHOTO = new Set(["AP1", "HA1", "HA2", "HA3", "HA4", "HA5", "HA6", "HA7", "NO1", "NO2", "NO3", "OT2", "OT3", "OT4", "SP1", "SP2", "SP3", "SP7", "SP8", "TO1", "TO2", "TO3"]);
+const PHOTOS = {};          // 离线单文件版：内联 data URI；线上版为空，走 photos/ 目录
+const HAS_PHOTO = new Set(["AP1", "HA1", "HA2", "HA3", "HA4", "HA5", "HA6", "HA7", "NO1", "NO2", "NO3", "OT2", "OT3", "OT4", "SP1", "SP2", "SP3", "SP7", "SP8", "TO1", "TO2", "TO3"]); // 有实拍照片的点位（避免 404 请求）
 const THUMB_DIR = 'thumbs/', PHOTO_DIR = 'photos/';
+// 图片走 CDN（国内比 github.io 快很多）；CDN 不通时自动回退本站路径，见 imgFallback()
+const IMG_CDN = 'https://fastly.jsdelivr.net/gh/LINKBREAD/hokkaido-2027-map@main/';
+function hasPhoto(id){ return !!(PHOTOS[id] || HAS_PHOTO.has(id)); }
+function thumbSrc(id){ return PHOTOS[id] || IMG_CDN + THUMB_DIR + id + '.jpg'; }
+function fullSrc(id){ return PHOTOS[id] || IMG_CDN + PHOTO_DIR + id + '.jpg'; }
+// 第一次加载失败 → 换回本站相对路径；再失败 → 显示占位图标
+function imgFallback(img, local){
+  if(img.dataset.fb){ const p = img.parentNode; if(p) p.innerHTML = '<div class="thumb-ph">' + (img.dataset.icon || '📍') + '</div>'; return; }
+  img.dataset.fb = '1'; img.src = local;
+}
+// CDN 卡住（不报错只是慢）时也在 3 秒内切回本站，避免一直转圈
+function armFallback(img, local, ms){
+  if(!img || !local) return;
+  const t = setTimeout(function(){
+    if(img.complete && img.naturalWidth > 0) return;
+    imgFallback(img, local);
+  }, ms || 3000);
+  img.addEventListener('load', function(){ clearTimeout(t); });
+  img.addEventListener('error', function(){ clearTimeout(t); imgFallback(img, local); });
+}
+const SHARE_QR = "share_qr.png";
+const SITE_URL = "https://linkbread.github.io/hokkaido-2027-map/";
+
+// ---------- 分类 ----------
 const CATS = {
   airport:     {name:'机场门户', color:'#64748B', icon:'✈️'},
   sapporo:     {name:'札幌',     color:'#2563EB', icon:'❄️'},
@@ -129,6 +264,8 @@ const CATS = {
   hakodate:    {name:'函馆',     color:'#EA580C', icon:'🌃'},
   osaka:       {name:'大阪中转', color:'#7C3AED', icon:'🏙️'},
 };
+
+// ---------- 景点数据 ----------
 const SPOTS = [
   {id:'AP1',cat:'airport',type:'机场',name:'新千岁机场',lat:42.7752,lng:141.6923,
    addr:'北海道千歳市美々（JR快速约40分钟到札幌市区）', hours:'航站楼全天（商店约8:00–21:00）', fee:'—',
@@ -265,6 +402,274 @@ const SPOTS = [
    hist:'关西机场岛内的日航酒店，与T1航站楼直连，深夜抵达、清晨转机都不用出机场大楼。2/8 晚 NH976 落地 22:00 直接入住，次日去神户机场转 NH577 飞札幌；2/15 晚从北海道飞回大阪后再住一晚，2/16 早班 NH973 回家——两晚都不用早起赶路。',
    near:'JR/南海「关西机场站」步行约3分钟；2/16 早班机 9:00 起飞，7 点出酒店都来得及。'},
 ];
+
+// ---------- 路线 ----------
+const TRIP_ROUTE = ['AP1','SP1','OT1','NO1','TO1','HA1'];   // 新千岁→札幌→小樽→登别→洞爷→函馆
+const RETURN_ROUTE = ['HA1','AP1'];                          // 函馆→新千岁 返程
+
+// ---------- 地图 ----------
+// 性能参数：优先 canvas 渲染、缩放动画节流、减少拖曳时的瓦片请求
+const map = L.map('map', {zoomControl:true, tap:true, preferCanvas:true,
+  zoomAnimation:true, fadeAnimation:false, markerZoomAnimation:false,
+  updateWhenZooming:false, wheelPxPerZoomLevel:120
+}).setView([42.45, 141.35], 8);
+map.zoomControl.setPosition('bottomright');
+
+// 底图：日本境内请用全球数据源（高德在日本只有空白瓦片，放到最大会一片空白）
+const TILE_OPT = {updateWhenIdle:true, updateWhenZooming:false, keepBuffer:1, maxNativeZoom:19,
+  noWrap:false, detectRetina:false};   // 关掉 retina 瓦片：高 DPI 手机否则会下载 4 倍数据量
+const baseLayers = {
+  'Esri 街道图（默认）': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    Object.assign({maxZoom:18, attribution:'© Esri, HERE, Garmin'}, TILE_OPT)),
+  'Esri 地形图': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    Object.assign({maxZoom:18, attribution:'© Esri, USGS'}, TILE_OPT)),
+  'OSM 全球标准': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    Object.assign({subdomains:'abc', maxZoom:19, attribution:'© OpenStreetMap'}, TILE_OPT)),
+  'CARTO 探索风（升龙同款）': L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    Object.assign({subdomains:'abcd', maxZoom:19, attribution:'© OSM © CARTO'}, TILE_OPT)),
+  '地理院 日文详细': L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
+    Object.assign({maxZoom:18, attribution:'© 国土地理院'}, TILE_OPT)),
+  '地理院 淡色': L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
+    Object.assign({maxZoom:18, attribution:'© 国土地理院'}, TILE_OPT)),
+  '高德（仅中国境内有内容）': L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+    Object.assign({subdomains:['1','2','3','4'], maxZoom:18, attribution:'© AutoNavi'}, TILE_OPT)),
+};
+// 顺序 = 国内网络下的加载速度优先级：CARTO 走全球 CDN 最快，地理院是日本机房，OSM 官方最慢
+const LAYER_ORDER = ['Esri 街道图（默认）','Esri 地形图','CARTO 探索风（升龙同款）','地理院 淡色','OSM 全球标准','高德（仅中国境内有内容）'];
+let baseIdx = 0;
+baseLayers[LAYER_ORDER[0]].addTo(map);
+L.control.layers(baseLayers, null, {position:'bottomright', collapsed:true}).addTo(map);
+
+map.on('baselayerchange', function(e){
+  const i = LAYER_ORDER.findIndex(n => baseLayers[n] === e.layer);
+  if(i >= 0) baseIdx = i;
+  hideTileHint();
+});
+
+// 底图看门狗：当前底图 8 秒还加载不出内容，就自动换下一个源；用户手动切换后立即停止
+let tileOk = 0, probing = false, tries = 0, userPicked = false, autoSwitching = false;
+map.on('tileload', function(){
+  tileOk++;
+  if(tileOk >= 2){ hideTileHint(); const l = document.getElementById('tileLoading'); if(l) l.style.display='none'; }
+});
+// 7 秒还没出图：换成手动提示，别让用户一直盯着"加载中"
+setTimeout(function(){
+  if(tileOk === 0){ const l = document.getElementById('tileLoading'); if(l) l.style.display='none'; showTileHint(); }
+}, 7000);
+function switchBase(){
+  if(tries >= 2){ showTileHint(); return; }   // 最多自动换 2 次，再多就是网络本身不通
+  probing = true; tries++;
+  const cur = LAYER_ORDER[baseIdx];
+  baseIdx = (baseIdx + 1) % LAYER_ORDER.length;
+  autoSwitching = true;
+  map.removeLayer(baseLayers[cur]);
+  baseLayers[LAYER_ORDER[baseIdx]].addTo(map);
+  autoSwitching = false;
+  tileOk = 0;
+  setTimeout(function(){ probing = false; }, 5000);
+}
+const watchdog = setInterval(function(){
+  if(userPicked || tileOk >= 2){ clearInterval(watchdog); return; }
+  if(probing) return;
+  switchBase();
+}, 3500);   // 3.5 秒还没出图就换下一个源，别让用户干等
+map.on('baselayerchange', function(){
+  if(!autoSwitching){ userPicked = true; clearInterval(watchdog); }
+  hideTileHint();
+});
+function showTileHint(){ document.getElementById('tileHint').style.display='block'; }
+function hideTileHint(){ document.getElementById('tileHint').style.display='none'; }
+
+// ---------- 底图测速：并发探一张瓦片，谁先回来就用谁 ----------
+// 国内网络下各源差距很大（OSM 官方常最慢），自动挑最快的，避免干等
+const SAMPLE_TILES = {
+  '地理院 淡色':   'https://cyberjapandata.gsi.go.jp/xyz/pale/8/228/94.png',
+  '地理院 日文详细':'https://cyberjapandata.gsi.go.jp/xyz/std/8/228/94.png',
+  'OSM 全球标准':  'https://a.tile.openstreetmap.org/8/228/94.png',
+};
+let raceDone = false;
+function raceProbe(){
+  Object.entries(SAMPLE_TILES).forEach(([name, url])=>{
+    const im = new Image();
+    const timer = setTimeout(()=>{ im.src = ''; }, 9000);
+    im.onload = ()=>{
+      clearTimeout(timer);
+      if(raceDone || tileOk > 0) return;   // 默认源已经出图就不再折腾
+      raceDone = true; useWinner(name);
+    };
+    im.onerror = ()=>{ clearTimeout(timer); };
+    im.src = url + '?_=' + Date.now();
+  });
+}
+function useWinner(name){
+  const i = LAYER_ORDER.indexOf(name);
+  if(i < 0 || i === baseIdx) return;
+  autoSwitching = true;
+  map.removeLayer(baseLayers[LAYER_ORDER[baseIdx]]);
+  baseIdx = i;
+  baseLayers[name].addTo(map);
+  autoSwitching = false;
+  tileOk = 0;
+}
+raceProbe();
+
+const imgCache = {};
+const markers = {};
+const POP_OPT = {maxWidth:270, minWidth:230, autoPanPadding:[28,28], closeButton:true};
+
+function badgeHTML(s){
+  return `<span class="badge" style="background:${CATS[s.cat].color}">${s.id}</span>`;
+}
+function iconHTML(s){
+  return L.divIcon({
+    className:'', html:`<div style="width:30px;height:30px;border-radius:50%;background:${CATS[s.cat].color};color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;outline:1px solid rgba(15,23,42,.35)">${s.id}</div>`,
+    iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-16]
+  });
+}
+function popupHTML(s){
+  const src = PHOTOS[s.id] || imgCache[s.id] || (hasPhoto(s.id) ? thumbSrc(s.id) : null);
+  const img = src
+    ? `<img class="zoomable" src="${src}" data-id="${s.id}" data-full="${fullSrc(s.id)}" data-local="${PHOTO_DIR + s.id}.jpg" data-icon="${CATS[s.cat].icon}" alt="${s.name}" loading="lazy">`
+    : `<div class="pop-img-ph" data-wiki="${s.id}">${CATS[s.cat].icon}<span class="ph-tip">载入配图中…</span></div>`;
+  return `<div class="pop">
+    ${img}
+    <div class="pt">${s.name} <span class="pb" style="background:${CATS[s.cat].color}">${s.id}</span></div>
+    <div class="row"><b>类型</b>：${s.type}　<b>门票/预算</b>：${s.fee}</div>
+    <div class="row"><b>地址</b>：${s.addr}</div>
+    <div class="row"><b>时间</b>：${s.hours}</div>
+    <div class="hist">${s.hist}</div>
+    <div class="near">📍 周边参考：${s.near}</div>
+    <div class="coord" data-coord="${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}">🧭 点这里复制坐标 ${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</div>
+  </div>`;
+}
+function copyCoord(el){
+  const t = el.getAttribute('data-coord');
+  const done = ()=>{ const o=el.textContent; el.textContent='✅ 已复制 '+t; setTimeout(()=>el.textContent=o,1600); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done).catch(fallback);
+  } else fallback();
+  function fallback(){
+    const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+// 弹窗打开后的统一处理：绑定复制坐标、点图看大图、按需补维基图
+function afterPopupOpen(s){
+  const pop = document.querySelector('.pop'); if(!pop) return;
+  const c = pop.querySelector('.coord'); if(c) c.onclick = ()=>copyCoord(c);
+  const zi = pop.querySelector('img.zoomable');
+  if(zi){
+    zi.onclick = ()=>openLightbox(zi.dataset.full, zi.dataset.local);
+    armFallback(zi, THUMB_DIR + zi.dataset.id + '.jpg', 2200);
+  }
+  const ph = pop.querySelector('.pop-img-ph[data-wiki]');
+  if(ph){
+    ensureWiki(s).then(u=>{
+      if(!u) { const t = ph.querySelector('.ph-tip'); if(t) t.textContent = ''; return; }
+      ph.outerHTML = `<img class="zoomable" src="${u}" data-full="${u}" alt="${s.name}">`;
+      const ni = document.querySelector('.pop img.zoomable');
+      if(ni) ni.onclick = ()=>openLightbox(ni.dataset.full);
+    });
+  }
+}
+SPOTS.forEach(s=>{
+  const m = L.marker([s.lat,s.lng],{icon:iconHTML(s)}).addTo(map);
+  m.on('click', ()=>{ m.bindPopup(popupHTML(s), POP_OPT).openPopup(); afterPopupOpen(s); });
+  markers[s.id] = m;
+});
+
+function buildPolyline(ids, color, dash){
+  const pts = ids.map(id=>{const s=SPOTS.find(x=>x.id===id);return [s.lat,s.lng];});
+  return L.polyline(pts,{color:color, weight:4, opacity:.85, dashArray:dash, lineJoin:'round'});
+}
+const tripLine = buildPolyline(TRIP_ROUTE, '#2563EB', null).addTo(map);
+const retLine  = buildPolyline(RETURN_ROUTE, '#94A3B8', '8,7').addTo(map);
+
+// ---------- 抽屉 ----------
+const sidebar = document.getElementById('sidebar');
+const scrim   = document.getElementById('scrim');
+const isMobile = ()=> window.innerWidth <= 860;
+// 抽屉打开时才真正下载缩略图（首屏零图片请求，加快首开）
+function hydrateThumbs(){
+  const imgs = Array.from(document.querySelectorAll('#list img[data-src]'));
+  let i = 0;
+  const step = ()=>{                       // 分批：一次灌 20 多张图手机会卡一下
+    for(let k = 0; k < 4 && i < imgs.length; k++, i++){
+      const im = imgs[i];
+      armFallback(im, THUMB_DIR + (im.dataset.id || '') + '.jpg', 2000);
+      im.src = im.dataset.src; im.removeAttribute('data-src');
+    }
+    if(i < imgs.length) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function openSide(){ sidebar.classList.add('open'); hydrateThumbs(); if(isMobile()) scrim.classList.add('show'); }
+function closeSide(){ sidebar.classList.remove('open'); scrim.classList.remove('show'); }
+document.getElementById('bMenu').onclick = openSide;
+document.getElementById('side-close').onclick = closeSide;
+scrim.onclick = closeSide;
+
+function buildLegend(){
+  document.getElementById('legend').innerHTML = Object.values(CATS).map(c=>
+    `<span class="lg"><span class="d" style="background:${c.color}"></span>${c.icon} ${c.name}</span>`).join('');
+}
+function buildFilters(){
+  const el = document.getElementById('filters');
+  el.innerHTML = Object.entries(CATS).map(([k,c])=>
+    `<span class="chip" data-cat="${k}" style="border-color:${c.color}">${c.icon} ${c.name}</span>`).join('');
+  el.querySelectorAll('.chip').forEach(ch=>{
+    ch.onclick=()=>{
+      ch.classList.toggle('off');
+      const cat=ch.dataset.cat, on=!ch.classList.contains('off');
+      SPOTS.filter(s=>s.cat===cat).forEach(s=>{
+        if(on){ if(!map.hasLayer(markers[s.id])) markers[s.id].addTo(map); }
+        else { if(map.hasLayer(markers[s.id])) map.removeLayer(markers[s.id]); }
+      });
+    };
+  });
+}
+function buildList(){
+  const list = document.getElementById('list');
+  list.innerHTML='';
+  Object.entries(CATS).forEach(([k,c])=>{
+    const items = SPOTS.filter(s=>s.cat===k);
+    if(!items.length) return;
+    list.insertAdjacentHTML('beforeend', `<div class="group-title" style="color:${c.color}">${c.icon} ${c.name}</div>`);
+    items.forEach(s=>{
+      const src = PHOTOS[s.id] || imgCache[s.id] || (hasPhoto(s.id) ? thumbSrc(s.id) : null);
+      const thumb = src
+        ? `<div class="thumb"><img data-src="${src}" data-id="${s.id}" data-icon="${CATS[s.cat].icon}" alt="" loading="lazy"></div>`
+        : `<div class="thumb"><div class="thumb-ph">${CATS[s.cat].icon}</div></div>`;
+      const div = document.createElement('div');
+      div.className='card';
+      div.dataset.id = s.id;
+      div.dataset.spot = s.id;
+      div.innerHTML = `${thumb}<div class="info">
+          <div class="nm">${badgeHTML(s)} ${s.name} <span class="tt">${s.type}</span></div>
+          <div class="meta">${s.hours}　${s.fee==='—'?'':s.fee}</div>
+          <div class="hist">${s.hist}</div>
+        </div>`;
+      div.onclick=()=>{ focusSpot(s.id); if(isMobile()) closeSide(); };
+      list.appendChild(div);
+    });
+  });
+  document.getElementById('cnt').textContent  = SPOTS.length;
+  document.getElementById('cnt2').textContent = SPOTS.length;
+}
+function focusSpot(id){
+  const s = SPOTS.find(x=>x.id===id); if(!s) return;
+  if(!map.hasLayer(markers[id])) markers[id].addTo(map);
+  map.flyTo([s.lat,s.lng], 14, {duration:.8});
+  setTimeout(()=>{
+    markers[id].bindPopup(popupHTML(s), POP_OPT).openPopup();
+    afterPopupOpen(s);
+  }, 850);
+}
+
+// ---------- 行程总览弹层（航班 + 酒店 + 路线时间轴）----------
 const ITINERARY = [
   {d:'2/8 周一', items:[
     {icon:'✈️', t:'NH976 上海浦东T2 19:05 → 大阪关西T1 22:00（1小时55分）'},
@@ -297,159 +702,132 @@ const ITINERARY = [
   {d:'2/16 周二', items:[
     {icon:'✈️', t:'NH973 大阪关西T1 09:00 → 上海浦东T2 11:00（3小时）· 回家'}]},
 ];
-const TRIP_ROUTE = ['AP1','SP1','OT1','NO1','TO1','HA1'];
-const RETURN_ROUTE = ['HA1','AP1'];
-
-// ---------- 地图（升龙同款配置：Esri 默认 + fitBounds + 无多余图层）----------
-const map = L.map('map', {zoomControl:true, tap:true, zoomSnap:.5,
-  zoomAnimation:true, fadeAnimation:false, markerZoomAnimation:false, updateWhenZooming:false});
-map.zoomControl.setPosition('bottomright');
-
-const baseLayers = {
-  'Esri 街道图（默认）': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    {maxZoom:18, keepBuffer:4, updateWhenZooming:false, detectRetina:false, attribution:'© Esri, HERE, Garmin'}),
-  'Esri 地形图': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-    {maxZoom:18, keepBuffer:4, updateWhenZooming:false, detectRetina:false, attribution:'© Esri, USGS'}),
-  'CARTO 探索风': L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    {subdomains:'abcd', maxZoom:19, keepBuffer:4, updateWhenZooming:false, detectRetina:false, attribution:'© CARTO'}),
-  'OSM 全球标准': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {subdomains:'abc', maxZoom:19, keepBuffer:4, updateWhenZooming:false, detectRetina:false, attribution:'© OpenStreetMap'}),
-  '高德（仅中国境内有内容）': L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
-    {subdomains:['1','2','3','4'], maxZoom:18, keepBuffer:4, detectRetina:false, attribution:'© AutoNavi'}),
-};
-const BASE_ORDER = ['Esri 街道图（默认）','Esri 地形图','CARTO 探索风','OSM 全球标准','高德（仅中国境内有内容）'];
-let baseIdx = 0;
-baseLayers[BASE_ORDER[0]].addTo(map);
-L.control.layers(baseLayers, null, {position:'bottomright', collapsed:true}).addTo(map);
-
-// 出图看门狗：3.5 秒没图就换下一个源
-let tileOk = 0, tries = 0, userPicked = false, probing = false, autoSwitching = false;
-map.on('tileload', function(){
-  if(++tileOk >= 2){ const t = document.getElementById('tip'); if(t) t.style.display='none'; }
-});
-function switchBase(){
-  if(tries >= 2){ showWarn(); return; }
-  probing = true; tries++;
-  const cur = BASE_ORDER[baseIdx];
-  baseIdx = (baseIdx + 1) % BASE_ORDER.length;
-  autoSwitching = true;
-  map.removeLayer(baseLayers[cur]);
-  baseLayers[BASE_ORDER[baseIdx]].addTo(map);
-  autoSwitching = false;
-  tileOk = 0;
-  setTimeout(function(){ probing = false; }, 5000);
-}
-const watchdog = setInterval(function(){
-  if(userPicked || tileOk >= 2){ clearInterval(watchdog); return; }
-  if(probing) return;
-  switchBase();
-}, 3500);
-map.on('baselayerchange', function(){
-  if(!autoSwitching){ userPicked = true; clearInterval(watchdog); }
-  hideTip();
-});
-setTimeout(function(){
-  // 以页面上实际渲染的瓦片数为准（缓存命中时 tileload 事件可能不触发）
-  if(tileOk === 0 && document.querySelectorAll('.leaflet-tile-loaded').length === 0) showWarn();
-}, 9000);
-function showWarn(){
-  const t = document.getElementById('tip');
-  t.className = 'warn'; t.textContent = '底图加载不出来？点右下角 🗺 换一个底图试试';
-  t.style.display = 'block';
-}
-function hideTip(){ const t = document.getElementById('tip'); t.style.display='none'; }
-
-// ---------- 标记与路线 ----------
-const POP_OPT = {maxWidth:250, minWidth:230, autoPanPadding:[26,26], closeButton:true};
-const markers = {};
-function iconHTML(s){
-  return L.divIcon({className:'', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-14],
-    html:`<div style="width:28px;height:28px;border-radius:50%;background:${CATS[s.cat].color};color:#fff;
-      font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;
-      border:2px solid #fff;outline:1px solid rgba(15,23,42,.35)">${s.id}</div>`});
-}
-function popupHTML(s){
-  const img = HAS_PHOTO.has(s.id)
-    ? `<img class="pop-img" src="${THUMB_DIR + s.id}.jpg" data-full="${PHOTO_DIR + s.id}.jpg" alt="${s.name}">`
-    : `<div class="pop-img-ph">${CATS[s.cat].icon}</div>`;
-  return `<div>${img}<div class="pop-bd">
-    <div class="pop-nm"><span class="pb" style="background:${CATS[s.cat].color}">${s.id}</span>${s.name}</div>
-    <div class="row"><b>类型</b> ${s.type}　<b>门票</b> ${s.fee}</div>
-    <div class="row"><b>地址</b> ${s.addr}</div>
-    <div class="row"><b>时间</b> ${s.hours}</div>
-    <div class="hist">${s.hist}</div>
-    <div class="near">📍 ${s.near}</div>
-    <button class="cp" data-coord="${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}">🧭 点这里复制坐标 ${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</button>
-  </div></div>`;
-}
-function bindPop(m, s){
-  m.on('click', function(){
-    m.bindPopup(popupHTML(s), POP_OPT).openPopup();
-    const pi = document.querySelector('.pop-img'); if(pi) pi.onclick = ()=>openLB(pi.dataset.full);
-    const cp = document.querySelector('.cp'); if(cp) cp.onclick = ()=>copyCoord(cp);
+const ovl = document.getElementById('ovl');
+function buildItinerary(){
+  document.getElementById('itnList').innerHTML = ITINERARY.map(day=>`
+    <div class="itn-day"><div class="dt">${day.d}</div><div class="its">
+      ${day.items.map(it=>`<div class="itn-it${it.spot?' spot':''}" ${it.spot?`data-spot="${it.spot}"`:''}>${it.icon} ${it.t}${it.spot?' <span class="go">→地图</span>':''}</div>`).join('')}
+    </div></div>`).join('');
+  document.querySelectorAll('.itn-it.spot').forEach(el=>{
+    el.onclick = ()=>{ closeOvl(); focusSpot(el.getAttribute('data-spot')); };
   });
 }
-SPOTS.forEach(s=>{ const m = L.marker([s.lat,s.lng],{icon:iconHTML(s)}).addTo(map); bindPop(m, s); markers[s.id]=m; });
+function openOvl(){ ovl.classList.add('show'); }
+function closeOvl(){ ovl.classList.remove('show'); }
+document.getElementById('bOvl').onclick = openOvl;
+document.getElementById('bOvlM').onclick = openOvl;
+document.getElementById('ovlClose').onclick = closeOvl;
+ovl.onclick = (e)=>{ if(e.target === ovl) closeOvl(); };
 
-function line(ids, color, dash){
-  const pts = ids.map(id=>{const s=SPOTS.find(x=>x.id===id); return [s.lat,s.lng];});
-  L.polyline(pts,{color:color, weight:4, opacity:.85, dashArray:dash, lineJoin:'round'}).addTo(map);
-}
-line(TRIP_ROUTE, '#2563EB', null);
-line(RETURN_ROUTE, '#94A3B8', '8,7');
-
-// 视野只包北海道（大阪酒店偏远，从行程面板点开即可，免得把地图缩太小）
-const hk = SPOTS.filter(s=>s.cat !== 'osaka');
-map.fitBounds(L.latLngBounds(hk.map(s=>[s.lat,s.lng])).pad(0.10));
-
-// ---------- 复制坐标 ----------
-function copyCoord(el){
-  const t = el.getAttribute('data-coord');
-  const done = ()=>{ const o = el.dataset.t || el.textContent; el.textContent = '✅ 已复制 ' + t;
-    setTimeout(()=>{ el.textContent = o; }, 1600); };
-  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done).catch(fb); else fb();
-  function fb(){
-    const ta = document.createElement('textarea'); ta.value = t;
-    ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
-    try{ document.execCommand('copy'); done(); }catch(e){}
-    document.body.removeChild(ta);
-  }
-}
-
-// ---------- 灯箱 ----------
-const lb = document.getElementById('lb'), lbImg = document.getElementById('lbImg'), lbLd = lb.querySelector('.ld');
-function openLB(src){
+// ---------- 大图灯箱（点弹窗配图看原图）----------
+const lb = document.getElementById('lb');
+const lbImg = document.getElementById('lbImg');
+const lbLoad = lb.querySelector('.lb-load');
+let lbTimer = null;
+function openLightbox(src, local){
   if(!src) return;
-  lb.classList.add('show'); lbImg.style.display='none'; lbLd.style.display='block'; lbLd.textContent='大图加载中…';
-  lbImg.onload = ()=>{ lbLd.style.display='none'; lbImg.style.display='block'; };
-  lbImg.onerror = ()=>{ lbLd.textContent = '这张图暂时加载不出来'; };
-  lbImg.src = src;
-}
-lb.onclick = ()=>{ lb.classList.remove('show'); lbImg.removeAttribute('src'); };
-
-// ---------- 行程 / 分享 ----------
-document.getElementById('itnList').innerHTML = ITINERARY.map(d=>
-  `<div class="itn-day"><div class="dt">${d.d}</div>${d.items.map(it=>
-    `<div class="it${it.spot?' spot':''}" ${it.spot?`data-spot="${it.spot}"`:''}>${it.icon} ${it.t}${it.spot?' →':''}</div>`).join('')}</div>`).join('');
-document.querySelectorAll('.it.spot').forEach(el=>{
-  el.onclick = ()=>{
-    const s = SPOTS.find(x=>x.id === el.dataset.spot); if(!s) return;
-    document.getElementById('itn').classList.remove('show');
-    map.flyTo([s.lat,s.lng], 14, {duration:.8});
-    setTimeout(()=>{ markers[s.id].openPopup(); }, 900);
+  lb.classList.add('show');
+  lbImg.style.display='none'; lbLoad.style.display='block'; lbLoad.textContent='大图加载中…';
+  lbImg.onload = ()=>{ clearTimeout(lbTimer); lbLoad.style.display='none'; lbImg.style.display='block'; };
+  lbImg.onerror = ()=>{
+    clearTimeout(lbTimer);
+    if(local && lbImg.getAttribute('src') !== local){ lbImg.setAttribute('src', local); }   // CDN 不通就用本站
+    else { lbLoad.textContent = '这张图暂时加载不出来'; }
   };
-});
-const itn = document.getElementById('itn'), sh = document.getElementById('sh');
-document.getElementById('bI').onclick = ()=> itn.classList.add('show');
-document.getElementById('itnClose').onclick = ()=> itn.classList.remove('show');
-itn.onclick = e=>{ if(e.target === itn) itn.classList.remove('show'); };
-document.getElementById('bS').onclick = ()=>{
+  // CDN 卡住不返回时，3.5 秒直接换本站
+  clearTimeout(lbTimer);
+  lbTimer = setTimeout(function(){
+    if(lbImg.complete && lbImg.naturalWidth > 0) return;
+    if(local && lbImg.getAttribute('src') !== local) lbImg.setAttribute('src', local);
+  }, 2500);
+  lbImg.setAttribute('src', src);
+}
+lb.onclick = closeLightbox;
+function closeLightbox(){ lb.classList.remove('show'); lbImg.removeAttribute('src'); }
+
+// ---------- 分享二维码（微信扫码直接打开）----------
+const share = document.getElementById('share');
+function openShare(){
   const q = document.getElementById('shQr');
-  if(q.dataset.src){ q.src = q.dataset.src; q.removeAttribute('data-src'); }
-  sh.classList.add('show');
+  if(q.dataset.src){ q.src = q.dataset.src; q.removeAttribute('data-src'); }  // 点开才下载
+  share.classList.add('show');
+}
+function closeShare(){ share.classList.remove('show'); }
+document.getElementById('bShare').onclick = openShare;
+document.getElementById('shClose').onclick = closeShare;
+share.onclick = (e)=>{ if(e.target === share) closeShare(); };
+document.getElementById('shCopy').onclick = function(){
+  const t = SITE_URL, btn = this;
+  const ok = ()=>{ const o = btn.textContent; btn.textContent = '✅ 已复制'; setTimeout(()=>btn.textContent = o, 1600); };
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok).catch(()=>{}); }
+  else { const ta = document.createElement('textarea'); ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); ok(); }catch(e){}
+    document.body.removeChild(ta); }
 };
-document.getElementById('shClose').onclick = ()=> sh.classList.remove('show');
-sh.onclick = e=>{ if(e.target === sh) sh.classList.remove('show'); };
+
+// ---------- 控件 ----------
+const bTripM = document.getElementById('bTripM');
+bTripM.onclick = ()=>{
+  const on = map.hasLayer(tripLine);
+  if(on){ map.removeLayer(tripLine); map.removeLayer(retLine); }
+  else  { tripLine.addTo(map); retLine.addTo(map); }
+  bTripM.classList.toggle('on', !on);
+};
+// 桌面端默认展开抽屉；移动端默认收起
+if(!isMobile()) openSide();
+
+// ---------- Wikimedia 补图 ----------
+const BAD_IMG = /(\.svg|logo|flag|map|icon|coat|symbol|diagram|banner|stamp)/i;
+async function loadWikiImage(term){
+  const url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json'
+    + '&generator=search&gsrsearch=' + encodeURIComponent(term)
+    + '&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url|mime&iiurlwidth=640&origin=*';
+  try{
+    // 8 秒拿不到就放弃：wikimedia 在国内常超时，不能拖慢整页
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 8000);
+    const res = await fetch(url, {signal: ctrl.signal}); clearTimeout(timer);
+    const data = await res.json();
+    const pages = (data.query && data.query.pages) || {};
+    for(const k in pages){
+      const ii = pages[k].imageinfo; if(!ii) continue;
+      const info = ii[0], title = pages[k].title||'';
+      if(['image/jpeg','image/png'].includes(info.mime) && !BAD_IMG.test(title)) return info.thumburl || info.url;
+    }
+  }catch(e){}
+  return null;
+}
+// 无实拍照片的点位按需向维基共享取图（懒加载，不阻塞首屏）
+const wikiPending = {};
+async function ensureWiki(s){
+  if(imgCache[s.id] || wikiPending[s.id] || !s.wiki) return imgCache[s.id] || null;
+  wikiPending[s.id] = true;
+  let u = await loadWikiImage(s.wiki);
+  if(!u && s.wiki2) u = await loadWikiImage(s.wiki2);
+  if(!u) u = await loadWikiImage(s.name);
+  if(u) imgCache[s.id] = u;
+  return u || null;
+}
+// 首屏渲染完成后，空闲时再慢慢补维基图（低优先级）
+function warmWiki(){
+  const todo = SPOTS.filter(s=>!hasPhoto(s.id) && s.wiki);
+  let i = 0;
+  const step = async ()=>{
+    if(i >= todo.length) return;
+    const s = todo[i++];
+    await ensureWiki(s);
+    if(!imgCache[s.id]) return step();
+    document.querySelectorAll(`.card[data-id="${s.id}"] .thumb`).forEach(t=>{
+      const open = sidebar.classList.contains('open');
+      t.innerHTML = `<img ${open ? `src="${imgCache[s.id]}"` : `data-src="${imgCache[s.id]}"`} alt="" loading="lazy">`;
+    });
+    return step();
+  };
+  if('requestIdleCallback' in window) requestIdleCallback(step, {timeout: 3000}); else setTimeout(step, 1500);
+}
+buildLegend(); buildFilters(); buildList(); buildItinerary();
+// 不再后台批量拉维基图（国内访问 wikimedia 很慢，会拖慢整页）；
+// 改为打开某个点位的弹窗时才按需取图，见 afterPopupOpen()。
 </script>
 </body>
 </html>
