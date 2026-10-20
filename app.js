@@ -189,41 +189,68 @@ const map = L.map('map', {zoomControl:true, tap:true, preferCanvas:true,
 }).setView([42.45, 141.35], 8);
 map.zoomControl.setPosition('bottomright');
 
-// 底图：只用一个源（Esri 街道图，Akamai CDN，国内实测最快、日本街道细节完整）
-const TILE_OPT = {updateWhenIdle:true, updateWhenZooming:false, keepBuffer:2, maxNativeZoom:18,
-  noWrap:false, detectRetina:false};   // 关掉 retina 瓦片：高 DPI 手机否则会下载 4 倍数据量
-const esriLayer = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-  Object.assign({maxZoom:18, attribution:'© Esri, HERE, Garmin'}, TILE_OPT)).addTo(map);
+// 底图：界面上始终只有一个地图；后台并发测速，自动挑当前网络下最快的源，
+// 某个源在高缩放级别取不到图（放大后空白）时再自动换下一个，用户全程无需选择
+const TILE_OPT = {updateWhenIdle:true, updateWhenZooming:false, keepBuffer:2,
+  noWrap:false, detectRetina:false};   // 关 retina：高 DPI 手机否则多下 4 倍数据
+const SRC = {
+  gsi:    {url:'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
+           opt:{maxZoom:18, attribution:'© 国土地理院'}},
+  gsiStd: {url:'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
+           opt:{maxZoom:18, attribution:'© 国土地理院'}},
+  osmJp:  {url:'https://tile.openstreetmap.jp/{z}/{x}/{y}.png',
+           opt:{maxZoom:19, attribution:'© OpenStreetMap JP'}},
+  esri:   {url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+           opt:{maxZoom:18, attribution:'© Esri, HERE, Garmin'}},
+};
+const ORDER = ['gsi','gsiStd','osmJp','esri'];
+const Z0 = 8, X0 = 228, Y0 = 94;          // 初始视图（setView zoom 8）的中心瓦片
+function tileUrl(n, z, x, y){
+  return SRC[n].url.replace('{z}', z).replace('{x}', x).replace('{y}', y);
+}
 
-// 静默兜底：极少数网络下 Esri 连不上时，自动换成备用源，界面上不给用户选择
-//（CARTO 现在要 API key，返回带水印的废瓦片，不能用）
-const backupLayer = L.tileLayer(
-  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  Object.assign({subdomains:'abc', maxZoom:19, attribution:'© OpenStreetMap'}, TILE_OPT));
-let tileOk = 0, switched = false;
-map.on('tileload', function(){
-  tileOk++;
-  if(tileOk >= 2){
-    const l = document.getElementById('tileLoading'); if(l) l.style.display='none';
-    document.getElementById('tileHint').style.display = 'none';
-  }
+let curName = null, mounted = {}, tileOk = 0, errs = 0;
+function mount(n){
+  if(!n || n === curName) return;
+  if(curName && mounted[curName]) map.removeLayer(mounted[curName]);
+  if(!mounted[n]) mounted[n] = L.tileLayer(SRC[n].url, Object.assign({}, SRC[n].opt, TILE_OPT));
+  curName = n;
+  mounted[n].addTo(map);
+}
+function hideLoad(){
+  const l = document.getElementById('tileLoading'); if(l) l.style.display = 'none';
+  document.getElementById('tileHint').style.display = 'none';
+}
+map.on('tileload', function(){ tileOk++; errs = 0; if(tileOk >= 2) hideLoad(); });
+function nextSource(){
+  const i = ORDER.indexOf(curName);
+  if(i >= 0 && i < ORDER.length - 1) mount(ORDER[i + 1]);
+}
+map.on('tileerror', function(){
+  errs++;
+  if(errs >= 4){ errs = 0; nextSource(); }   // 连着取不到 → 换下一个源
 });
+// 放大/移动后 3.5 秒一张新瓦片都没回来（请求挂死，不报错）→ 也换源
+map.on('zoomend', function(){
+  const before = tileOk;
+  setTimeout(function(){ if(tileOk === before) nextSource(); }, 3500);
+});
+
+// 并发测速：谁先返回就用谁（通常几百毫秒内出结果）
+ORDER.forEach(function(n){
+  const im = new Image();
+  const timer = setTimeout(function(){ im.src = ''; }, 6000);
+  im.onload = function(){ clearTimeout(timer); if(!curName) mount(n); };
+  im.onerror = function(){ clearTimeout(timer); };
+  im.src = tileUrl(n, Z0, X0, Y0) + '?_=' + Date.now();
+});
+setTimeout(function(){ if(!curName) mount('gsi'); }, 2000);   // 测速都没回来就用默认
 setTimeout(function(){
-  if(tileOk > 0) return;
-  const l = document.getElementById('tileLoading'); if(l) l.style.display='none';
-  if(switched){ document.getElementById('tileHint').style.display = 'block'; }
-}, 6000);
-// 5 秒没出图 → 备用源顶上（用户无感）
-setTimeout(function(){
-  if(tileOk > 0 || switched) return;
-  switched = true;
-  map.removeLayer(esriLayer);
-  backupLayer.addTo(map);
-  setTimeout(function(){
-    if(tileOk === 0) document.getElementById('tileHint').style.display = 'block';
-  }, 7000);
-}, 5000);
+  if(tileOk === 0){
+    const l = document.getElementById('tileLoading'); if(l) l.style.display = 'none';
+    document.getElementById('tileHint').style.display = 'block';
+  }
+}, 9000);
 
 const imgCache = {};
 const markers = {};
