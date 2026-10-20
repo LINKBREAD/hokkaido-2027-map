@@ -2,25 +2,22 @@
 const PHOTOS = {};          // 离线单文件版：内联 data URI；线上版为空，走 photos/ 目录
 const HAS_PHOTO = new Set(["AP1", "HA1", "HA2", "HA3", "HA4", "HA5", "HA6", "HA7", "NO1", "NO2", "NO3", "OT2", "OT3", "OT4", "SP1", "SP2", "SP3", "SP7", "SP8", "TO1", "TO2", "TO3"]); // 有实拍照片的点位（避免 404 请求）
 const THUMB_DIR = 'thumbs/', PHOTO_DIR = 'photos/';
-// 图片走 CDN（国内比 github.io 快很多）；CDN 不通时自动回退本站路径，见 imgFallback()
+// 大图走 CDN（国内比 github.io 快）；CDN 不通时自动回退本站路径，见 imgFallback()
 const IMG_CDN = 'https://fastly.jsdelivr.net/gh/LINKBREAD/hokkaido-2027-map@main/';
+const REAL_PHOTO = new Set(["AP1", "HA1", "HA2", "HA3", "HA4", "HA5", "HA6", "HA7", "NO1", "NO2", "NO3", "OT2", "OT3", "OT4", "SP1", "SP2", "SP3", "SP7", "SP8", "TO1", "TO2", "TO3"]);  // 只有 REAL 里的点位能点开看大图本地实拍
+// 缩略图全部内联进 thumbs.js（WebP data URI）：列表和弹窗出图不需要任何网络请求
 function hasPhoto(id){ return !!(PHOTOS[id] || HAS_PHOTO.has(id)); }
-function thumbSrc(id){ return PHOTOS[id] || IMG_CDN + THUMB_DIR + id + '.jpg'; }
+function thumbSrc(id){ return PHOTOS[id] || (window.THUMBS && window.THUMBS[id]) || ''; }
 function fullSrc(id){ return PHOTOS[id] || IMG_CDN + PHOTO_DIR + id + '.jpg'; }
-// 第一次加载失败 → 换回本站相对路径；再失败 → 显示占位图标
-function imgFallback(img, local){
-  if(img.dataset.fb){ const p = img.parentNode; if(p) p.innerHTML = '<div class="thumb-ph">' + (img.dataset.icon || '📍') + '</div>'; return; }
-  img.dataset.fb = '1'; img.src = local;
-}
-// CDN 卡住（不报错只是慢）时也在 3 秒内切回本站，避免一直转圈
+// CDN 卡住（不报错只是慢）时主动切回本站相对路径
 function armFallback(img, local, ms){
   if(!img || !local) return;
   const t = setTimeout(function(){
     if(img.complete && img.naturalWidth > 0) return;
-    imgFallback(img, local);
-  }, ms || 3000);
+    img.src = local;
+  }, ms || 1200);
   img.addEventListener('load', function(){ clearTimeout(t); });
-  img.addEventListener('error', function(){ clearTimeout(t); imgFallback(img, local); });
+  img.addEventListener('error', function(){ clearTimeout(t); img.src = local; });
 }
 const SHARE_QR = "share_qr.png";
 const SITE_URL = "https://linkbread.github.io/hokkaido-2027-map/";
@@ -252,9 +249,8 @@ setTimeout(function(){
   }
 }, 9000);
 
-const imgCache = {};
-const markers = {};
 const POP_OPT = {maxWidth:270, minWidth:230, autoPanPadding:[28,28], closeButton:true};
+const markers = {};
 
 function badgeHTML(s){
   return `<span class="badge" style="background:${CATS[s.cat].color}">${s.id}</span>`;
@@ -266,10 +262,13 @@ function iconHTML(s){
   });
 }
 function popupHTML(s){
-  const src = PHOTOS[s.id] || imgCache[s.id] || (hasPhoto(s.id) ? thumbSrc(s.id) : null);
+  const src = PHOTOS[s.id] || thumbSrc(s.id);
+  const zoom = REAL_PHOTO.has(s.id) || !!PHOTOS[s.id];   // 只有真·实拍才能点开看大图
   const img = src
-    ? `<img class="zoomable" src="${src}" data-id="${s.id}" data-full="${fullSrc(s.id)}" data-local="${PHOTO_DIR + s.id}.jpg" data-icon="${CATS[s.cat].icon}" alt="${s.name}" loading="lazy">`
-    : `<div class="pop-img-ph" data-wiki="${s.id}">${CATS[s.cat].icon}<span class="ph-tip">载入配图中…</span></div>`;
+    ? (zoom
+        ? `<img class="zoomable" src="${src}" data-full="${fullSrc(s.id)}" data-local="${PHOTO_DIR + s.id}.jpg" alt="${s.name}">`
+        : `<img src="${src}" alt="${s.name}">`)
+    : `<div class="pop-img-ph">${CATS[s.cat].icon}</div>`;
   return `<div class="pop">
     ${img}
     <div class="pt">${s.name} <span class="pb" style="background:${CATS[s.cat].color}">${s.id}</span></div>
@@ -295,24 +294,12 @@ function copyCoord(el){
   }
 }
 
-// 弹窗打开后的统一处理：绑定复制坐标、点图看大图、按需补维基图
+// 弹窗打开后的统一处理：绑定复制坐标、点图看大图（缩略图已内联，无需回退）
 function afterPopupOpen(s){
   const pop = document.querySelector('.pop'); if(!pop) return;
   const c = pop.querySelector('.coord'); if(c) c.onclick = ()=>copyCoord(c);
   const zi = pop.querySelector('img.zoomable');
-  if(zi){
-    zi.onclick = ()=>openLightbox(zi.dataset.full, zi.dataset.local);
-    armFallback(zi, THUMB_DIR + zi.dataset.id + '.jpg', 2200);
-  }
-  const ph = pop.querySelector('.pop-img-ph[data-wiki]');
-  if(ph){
-    ensureWiki(s).then(u=>{
-      if(!u) { const t = ph.querySelector('.ph-tip'); if(t) t.textContent = ''; return; }
-      ph.outerHTML = `<img class="zoomable" src="${u}" data-full="${u}" alt="${s.name}">`;
-      const ni = document.querySelector('.pop img.zoomable');
-      if(ni) ni.onclick = ()=>openLightbox(ni.dataset.full);
-    });
-  }
+  if(zi) zi.onclick = ()=>openLightbox(zi.dataset.full, zi.dataset.local);
 }
 SPOTS.forEach(s=>{
   const m = L.marker([s.lat,s.lng],{icon:iconHTML(s)}).addTo(map);
@@ -331,21 +318,8 @@ const retLine  = buildPolyline(RETURN_ROUTE, '#94A3B8', '8,7').addTo(map);
 const sidebar = document.getElementById('sidebar');
 const scrim   = document.getElementById('scrim');
 const isMobile = ()=> window.innerWidth <= 860;
-// 抽屉打开时才真正下载缩略图（首屏零图片请求，加快首开）
-function hydrateThumbs(){
-  const imgs = Array.from(document.querySelectorAll('#list img[data-src]'));
-  let i = 0;
-  const step = ()=>{                       // 分批：一次灌 20 多张图手机会卡一下
-    for(let k = 0; k < 4 && i < imgs.length; k++, i++){
-      const im = imgs[i];
-      armFallback(im, THUMB_DIR + (im.dataset.id || '') + '.jpg', 2000);
-      im.src = im.dataset.src; im.removeAttribute('data-src');
-    }
-    if(i < imgs.length) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-function openSide(){ sidebar.classList.add('open'); hydrateThumbs(); if(isMobile()) scrim.classList.add('show'); }
+// 缩略图已内联（thumbs.js），打开抽屉无需再下载图片
+function openSide(){ sidebar.classList.add('open'); if(isMobile()) scrim.classList.add('show'); }
 function closeSide(){ sidebar.classList.remove('open'); scrim.classList.remove('show'); }
 document.getElementById('bMenu').onclick = openSide;
 document.getElementById('side-close').onclick = closeSide;
@@ -378,9 +352,10 @@ function buildList(){
     if(!items.length) return;
     list.insertAdjacentHTML('beforeend', `<div class="group-title" style="color:${c.color}">${c.icon} ${c.name}</div>`);
     items.forEach(s=>{
-      const src = PHOTOS[s.id] || imgCache[s.id] || (hasPhoto(s.id) ? thumbSrc(s.id) : null);
+      const src = PHOTOS[s.id] || thumbSrc(s.id);
+      // 缩略图内联在 thumbs.js：先出彩色占位，thumbs 到位后自动替换，不用等网络
       const thumb = src
-        ? `<div class="thumb"><img data-src="${src}" data-id="${s.id}" data-icon="${CATS[s.cat].icon}" alt="" loading="lazy"></div>`
+        ? `<div class="thumb"><img src="${src}" data-id="${s.id}" alt=""></div>`
         : `<div class="thumb"><div class="thumb-ph">${CATS[s.cat].icon}</div></div>`;
       const div = document.createElement('div');
       div.className='card';
@@ -473,12 +448,12 @@ function openLightbox(src, local){
     if(local && lbImg.getAttribute('src') !== local){ lbImg.setAttribute('src', local); }   // CDN 不通就用本站
     else { lbLoad.textContent = '这张图暂时加载不出来'; }
   };
-  // CDN 卡住不返回时，3.5 秒直接换本站
+  // CDN 卡住不返回时，1.5 秒直接换本站（縮略图已内联，这里只是大图）
   clearTimeout(lbTimer);
   lbTimer = setTimeout(function(){
     if(lbImg.complete && lbImg.naturalWidth > 0) return;
     if(local && lbImg.getAttribute('src') !== local) lbImg.setAttribute('src', local);
-  }, 2500);
+  }, 1500);
   lbImg.setAttribute('src', src);
 }
 lb.onclick = closeLightbox;
@@ -515,55 +490,24 @@ bTripM.onclick = ()=>{
 // 桌面端默认展开抽屉；移动端默认收起
 if(!isMobile()) openSide();
 
-// ---------- Wikimedia 补图 ----------
-const BAD_IMG = /(\.svg|logo|flag|map|icon|coat|symbol|diagram|banner|stamp)/i;
-async function loadWikiImage(term){
-  const url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json'
-    + '&generator=search&gsrsearch=' + encodeURIComponent(term)
-    + '&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url|mime&iiurlwidth=640&origin=*';
-  try{
-    // 8 秒拿不到就放弃：wikimedia 在国内常超时，不能拖慢整页
-    const ctrl = new AbortController();
-    const timer = setTimeout(()=>ctrl.abort(), 8000);
-    const res = await fetch(url, {signal: ctrl.signal}); clearTimeout(timer);
-    const data = await res.json();
-    const pages = (data.query && data.query.pages) || {};
-    for(const k in pages){
-      const ii = pages[k].imageinfo; if(!ii) continue;
-      const info = ii[0], title = pages[k].title||'';
-      if(['image/jpeg','image/png'].includes(info.mime) && !BAD_IMG.test(title)) return info.thumburl || info.url;
-    }
-  }catch(e){}
-  return null;
-}
-// 无实拍照片的点位按需向维基共享取图（懒加载，不阻塞首屏）
-const wikiPending = {};
-async function ensureWiki(s){
-  if(imgCache[s.id] || wikiPending[s.id] || !s.wiki) return imgCache[s.id] || null;
-  wikiPending[s.id] = true;
-  let u = await loadWikiImage(s.wiki);
-  if(!u && s.wiki2) u = await loadWikiImage(s.wiki2);
-  if(!u) u = await loadWikiImage(s.name);
-  if(u) imgCache[s.id] = u;
-  return u || null;
-}
-// 首屏渲染完成后，空闲时再慢慢补维基图（低优先级）
-function warmWiki(){
-  const todo = SPOTS.filter(s=>!hasPhoto(s.id) && s.wiki);
-  let i = 0;
-  const step = async ()=>{
-    if(i >= todo.length) return;
-    const s = todo[i++];
-    await ensureWiki(s);
-    if(!imgCache[s.id]) return step();
-    document.querySelectorAll(`.card[data-id="${s.id}"] .thumb`).forEach(t=>{
-      const open = sidebar.classList.contains('open');
-      t.innerHTML = `<img ${open ? `src="${imgCache[s.id]}"` : `data-src="${imgCache[s.id]}"`} alt="" loading="lazy">`;
-    });
-    return step();
-  };
-  if('requestIdleCallback' in window) requestIdleCallback(step, {timeout: 3000}); else setTimeout(step, 1500);
-}
 buildLegend(); buildFilters(); buildList(); buildItinerary();
-// 不再后台批量拉维基图（国内访问 wikimedia 很慢，会拖慢整页）；
-// 改为打开某个点位的弹窗时才按需取图，见 afterPopupOpen()。
+
+// ---------- 内联缩略图（thumbs.js）----------
+// 地图渲染完再拉，避免和地图脚本抢带宽；加载完自动把列表里的图补上
+function loadThumbs(){
+  if(window.__thumbsReady) return;
+  const s = document.createElement('script');
+  s.src = 'thumbs.js'; s.async = true;
+  s.onerror = ()=>{};
+  document.head.appendChild(s);
+}
+window.__onThumbs = function(){
+  document.querySelectorAll('#list .card[data-id]').forEach(card=>{
+    const id = card.dataset.id, t = THUMBS[id];
+    if(!t) return;
+    const box = card.querySelector('.thumb'); if(!box) return;
+    if(box.querySelector('img')) return;
+    box.innerHTML = `<img src="${t}" alt="">`;
+  });
+};
+map.whenReady(function(){ setTimeout(loadThumbs, 400); });
