@@ -739,9 +739,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #filters{padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line)}
   .chip{font-size:11px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:#f7f8fa;cursor:pointer;user-select:none}
   .chip.off{opacity:.4;text-decoration:line-through}
-  #list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 10px calc(16px + var(--safe-bot))}
-  .group-title{font-size:12px;font-weight:700;margin:12px 6px 6px;letter-spacing:.5px}
-  .card{display:flex;gap:10px;padding:9px;border-radius:12px;cursor:pointer;background:#fff}
+  /* 惯性滚动 + 滚动不穿透到地图；隐藏滚动条让列表更干净 */
+  #list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    padding:0 10px calc(16px + var(--safe-bot));scrollbar-width:none;-ms-overflow-style:none}
+  #list::-webkit-scrollbar{display:none}
+  /* 分组标题吸顶：长列表快速滑动时始终知道自己在哪个城市/哪一天 */
+  .group-title{font-size:12px;font-weight:700;margin:0;letter-spacing:.5px;padding:8px 6px;
+    position:sticky;top:0;z-index:3;background:#fff;box-shadow:0 1px 0 var(--line)}
+  .card{display:flex;gap:10px;padding:9px;border-radius:12px;cursor:pointer;background:#fff;
+    content-visibility:auto;contain-intrinsic-size:auto 80px;touch-action:manipulation}
   .card:active{background:#eef2f7}
   .card .thumb{width:80px;height:62px;flex:0 0 80px;border-radius:9px;object-fit:cover;background:#e9edf2;overflow:hidden}
   .card .thumb img{width:100%;height:100%;object-fit:cover}
@@ -755,12 +761,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .card .meta{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .card .hist{font-size:11.5px;color:#555;margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   /* ---------- 搜索 / 排序 ---------- */
-  #searchbar{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);background:#fbfcfe}
-  #q{flex:1;min-width:0;height:38px;border:1px solid #d6dae1;border-radius:9px;padding:0 10px;font-size:13px;
-     font-family:inherit;color:var(--ink);background:#fff;-webkit-appearance:none;appearance:none}
-  #q:focus{outline:none;border-color:#2563eb}
-  #qClear{width:38px;height:38px;flex:0 0 38px;border:1px solid #d6dae1;background:#fff;border-radius:9px;
-     font-size:15px;color:#777;cursor:pointer}
   #sortbar{display:flex;gap:6px;padding:7px 16px;border-bottom:1px solid var(--line);align-items:center}
   #sortbar .sl{font-size:11px;color:var(--muted);flex:1}
   .sbtn{font-size:11.5px;padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:#f7f8fa;cursor:pointer;user-select:none}
@@ -789,7 +789,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   /* ---------- 弹窗 ---------- */
   .leaflet-popup-content-wrapper{border-radius:14px}
-  .leaflet-popup-content{margin:12px 13px;line-height:1.5}
+  /* 攻略文字长时弹窗内部可滑动，不会被屏幕截断 */
+  .leaflet-popup-content{margin:12px 13px;line-height:1.5;
+    max-height:56vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
   .leaflet-container a.leaflet-popup-close-button{width:30px;height:30px;font-size:22px;padding:4px 0 0;color:#888}
   .pop{width:100%}
   .pop img{width:100%;height:132px;object-fit:cover;border-radius:8px;margin-bottom:8px;background:#eee;display:block}
@@ -839,18 +841,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .itn-it .go{color:#2563eb;font-size:11px}
   .itn-note{font-size:11px;color:#856404;background:#fff8e1;border-radius:8px;padding:8px 10px;margin-top:10px;line-height:1.5}
 
-  /* ---------- 分享二维码弹层 ---------- */
-  #share{position:absolute;inset:0;z-index:2100;background:rgba(8,14,24,.9);display:none;
-    flex-direction:column;align-items:center;justify-content:center;padding:20px}
-  #share.show{display:flex}
-  .sh-box{width:100%;max-width:340px;background:#fff;border-radius:14px;padding:18px 16px;text-align:center}
-  .sh-t{font-size:15px;font-weight:700;color:#16324F;margin-bottom:12px}
-  .sh-box img{width:220px;height:220px;display:block;margin:0 auto}
-  .sh-u{font-size:11.5px;color:#2563eb;word-break:break-all;margin-top:10px;line-height:1.4}
-  .sh-copy{margin-top:10px;padding:8px 18px;border:none;border-radius:999px;background:#16324F;color:#fff;
-    font-size:13px;font-weight:600;cursor:pointer}
-  .sh-copy:active{background:#0f2540}
-  .sh-tip{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}
+  /* 大图支持左右滑动切换、下滑关闭 */
+  #lb{touch-action:none}
+  #lb .lb-cap .hint{display:block;font-size:11px;color:#94a3b8;margin-top:4px}
 
   #tileLoading,#tileHint{position:absolute;bottom:calc(16px + var(--safe-bot));left:50%;transform:translateX(-50%);z-index:900;
     background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:8px 14px;font-size:12px;color:#856404;
@@ -890,10 +883,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <h1>2027 新春北海道 · 雪国巡礼地图</h1>
       <div class="sub">2/8 上海出发 · 2/16 返回（9天8晚，大阪中转）<br>新千岁 → 札幌 → 小樽 → 登别 → 洞爷 → 函馆<br>点卡片看实拍照片与攻略 · 共 <span id="cnt">0</span> 处</div>
     </div>
-    <div id="searchbar">
-      <input id="q" type="search" placeholder="搜地点 / 编号 / 地址…" autocomplete="off">
-      <button id="qClear" title="清空">✕</button>
-    </div>
     <div id="legend"></div>
     <div id="filters"></div>
     <div id="sortbar">
@@ -905,7 +894,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div id="empty">没有匹配的地点，换个关键词试试</div>
     <div id="side-foot">
       <button class="fbtn" id="bOvl">✈️ 查看行程总览（航班 · 酒店 · 路线）</button>
-      <button class="fbtn" id="bShare" style="background:#2563EB">📲 分享二维码（微信扫码打开）</button>
       <div class="tip">建议购买「JR 北海道铁路周游券」，札幌⇌小樽当日往返，登别/洞爷/函馆串成南线。<br>坐标为 WGS-84，弹窗内点坐标即可复制，粘贴到 Google/Apple 地图导航。</div>
     </div>
   </aside>
@@ -933,16 +921,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
   </div>
 
-  <div id="share">
-    <div class="sh-box">
-      <div class="sh-t">📲 微信扫码打开这张地图</div>
-      <img id="shQr" alt="地图二维码" data-src="share_qr.png">
-      <div class="sh-u" id="shUrl">https://linkbread.github.io/hokkaido-2027-map/</div>
-      <button class="sh-copy" id="shCopy">复制链接</button>
-      <div class="sh-tip">把这张二维码截图发给同伴，微信 / 相机扫一扫都能直接打开（永久链接，不会失效）</div>
-    </div>
-    <button class="cb" id="shClose">关闭</button>
-  </div>
 </div>
 
 <script defer src="app.js"></script>
