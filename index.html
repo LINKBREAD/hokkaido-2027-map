@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0D1B2E">
+<meta name="theme-color" content="#16324F">
 <title>2027 新春北海道 · 雪国巡礼地图</title>
-<meta name="description" content="2027 新春北海道行程地图：2/8–2/16 大阪中转，新千岁→札幌→小樽→登别→洞爷→函馆，31 处地点含实拍照片、航班酒店、攻略贴士与可复制导航坐标。">
+<meta name="description" content="2027 新春北海道行程地图：2/8–2/16 大阪中转，新千岁→札幌→小樽→登别→洞爷→函馆，28 处地点含实拍照片、航班酒店、攻略贴士与可复制导航坐标。">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="雪国巡礼地图">
 <meta property="og:title" content="2027 新春北海道 · 雪国巡礼地图">
-<meta property="og:description" content="9天8晚 · 31 处地点 · 实拍照片 · 航班酒店 · 一键复制导航坐标">
+<meta property="og:description" content="9天8晚 · 28 处地点 · 实拍照片 · 航班酒店 · 一键复制导航坐标">
 <meta property="og:image" content="https://linkbread.github.io/hokkaido-2027-map/og-image.jpg">
 <meta property="og:url" content="https://linkbread.github.io/hokkaido-2027-map/">
 <meta name="twitter:card" content="summary_large_image">
@@ -714,7 +714,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #topbar .tt{font-size:15px;font-weight:700;line-height:1.15;flex:1;min-width:0;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #topbar .tt .s{display:block;font-size:10.5px;font-weight:400;color:var(--muted);margin-top:1px}
-  .tbtn{height:34px;padding:0 11px;border:1px solid #d6dae1;background:#fff;border-radius:9px;
+  .tbtn{height:38px;padding:0 11px;border:1px solid #d6dae1;background:#fff;border-radius:9px;
     font-size:12.5px;cursor:pointer;color:#222;display:flex;align-items:center;gap:4px;flex:0 0 auto}
   .tbtn:active{background:#eef1f5}
   .tbtn.on{background:#2563eb;color:#fff;border-color:#2563eb}
@@ -754,6 +754,33 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .card .nm .tt{font-size:9.5px;color:#666;background:#eef1f5;border-radius:4px;padding:1px 4px;font-weight:500}
   .card .meta{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .card .hist{font-size:11.5px;color:#555;margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  /* ---------- 搜索 / 排序 ---------- */
+  #searchbar{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);background:#fbfcfe}
+  #q{flex:1;min-width:0;height:38px;border:1px solid #d6dae1;border-radius:9px;padding:0 10px;font-size:13px;
+     font-family:inherit;color:var(--ink);background:#fff;-webkit-appearance:none;appearance:none}
+  #q:focus{outline:none;border-color:#2563eb}
+  #qClear{width:38px;height:38px;flex:0 0 38px;border:1px solid #d6dae1;background:#fff;border-radius:9px;
+     font-size:15px;color:#777;cursor:pointer}
+  #sortbar{display:flex;gap:6px;padding:7px 16px;border-bottom:1px solid var(--line);align-items:center}
+  #sortbar .sl{font-size:11px;color:var(--muted);flex:1}
+  .sbtn{font-size:11.5px;padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:#f7f8fa;cursor:pointer;user-select:none}
+  .sbtn.on{background:#2563eb;color:#fff;border-color:#2563eb}
+  #empty{padding:28px 16px;text-align:center;font-size:12.5px;color:var(--muted);display:none;line-height:1.6}
+  .card.hide{display:none}
+  .card .dy{font-size:9.5px;color:#0b6b45;background:#eafaf1;border-radius:4px;padding:1px 4px;font-weight:600;flex:0 0 auto}
+  .group-title .gn{font-size:10px;color:var(--muted);font-weight:400;margin-left:4px}
+
+  /* ---------- 弹窗内的上一个/下一个 + 外部导航 ---------- */
+  .pop .pnav{display:flex;gap:6px;margin-top:9px}
+  .pop .pnav button{flex:1;height:36px;border:1px solid #d6dae1;background:#fff;border-radius:8px;
+    font-size:12px;color:#333;cursor:pointer;font-family:inherit;padding:0 4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pop .pnav button:active{background:#eef2f7}
+  .pop .pnav button:disabled{opacity:.4}
+  .pop .navout{display:block;margin-top:7px;text-align:center;font-size:12.5px;color:#fff;background:#0b6b45;
+    border-radius:8px;padding:9px;text-decoration:none;font-weight:600}
+  .pop .navout:active{background:#095739}
+
   #side-foot{border-top:1px solid var(--line);padding:10px 16px calc(12px + var(--safe-bot));background:#fafbfd}
   #side-foot .fbtn{display:block;width:100%;text-align:center;padding:10px;border-radius:10px;
     background:#16324F;color:#fff;font-size:13px;font-weight:600;margin-bottom:8px}
@@ -782,7 +809,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #lb.show{display:flex}
   #lb img{max-width:100%;max-height:82%;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.55);display:none}
   #lb .lb-load{color:#cbd5e1;font-size:13px}
+  #lb .lb-bar{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
   #lb .lb-x{padding:9px 26px;border:none;border-radius:999px;background:#fff;color:#16324F;font-size:14px;font-weight:600;cursor:pointer}
+  #lb .lb-nav{padding:9px 18px;border:none;border-radius:999px;background:rgba(255,255,255,.18);color:#fff;
+    font-size:13px;font-weight:600;cursor:pointer}
+  #lb .lb-nav:disabled{opacity:.35}
+  #lb .lb-cap{color:#e2e8f0;font-size:12.5px;text-align:center;max-width:92%;line-height:1.5}
+  #lb img.preview{filter:blur(8px);transform:scale(1.03)}   /* 先用内联缩略图顶上，大图到位再替换 */
+  .leaflet-control-fullview{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .leaflet-control-fullview a{display:flex;align-items:center;justify-content:center;width:34px;height:34px;
+    font-size:17px;color:#333;text-decoration:none;border-radius:8px}
   img.zoomable{cursor:zoom-in}
   .pop-img-ph .ph-tip{font-size:11px;color:#9ca3af;margin-left:6px;font-weight:400}
   #ovl{position:absolute;inset:0;z-index:2000;background:rgba(8,14,24,.9);display:none;
@@ -854,9 +890,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <h1>2027 新春北海道 · 雪国巡礼地图</h1>
       <div class="sub">2/8 上海出发 · 2/16 返回（9天8晚，大阪中转）<br>新千岁 → 札幌 → 小樽 → 登别 → 洞爷 → 函馆<br>点卡片看实拍照片与攻略 · 共 <span id="cnt">0</span> 处</div>
     </div>
+    <div id="searchbar">
+      <input id="q" type="search" placeholder="搜地点 / 编号 / 地址…" autocomplete="off">
+      <button id="qClear" title="清空">✕</button>
+    </div>
     <div id="legend"></div>
     <div id="filters"></div>
+    <div id="sortbar">
+      <span class="sl">排序</span>
+      <span class="sbtn on" data-sort="cat">按城市</span>
+      <span class="sbtn" data-sort="day">按行程日</span>
+    </div>
     <div id="list"></div>
+    <div id="empty">没有匹配的地点，换个关键词试试</div>
     <div id="side-foot">
       <button class="fbtn" id="bOvl">✈️ 查看行程总览（航班 · 酒店 · 路线）</button>
       <button class="fbtn" id="bShare" style="background:#2563EB">📲 分享二维码（微信扫码打开）</button>
@@ -868,15 +914,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="box itin-box">
       <div class="itn-head">✈️ 行程总览 · 2/8 – 2/16（9天8晚）</div>
       <div id="itnList"></div>
-      <div class="itn-note">⚠️ NH577 / NH578 / NH973 有「航班调整」通知，出发前请再确认时刻；2/8 晚抵达关西机场后住日航酒店（T1直连），次日从神户机场转机飞札幌。</div>
+      <div class="itn-note">⚠️ NH577 / NH578 / NH973 有「航班调整」通知，出发前请再确认时刻；2/8 晚抵达关西机场后住日航酒店（T1直连），次日从神户机场转机飞札幌。<br>⚠️ 2/15 是全程最长转场：函馆 → 新千岁机场需约 4.5 小时（含换乘），且冬季 JR 可能因风雪延误，建议预留缓冲或考虑改订函馆机场出发的航班。</div>
     </div>
     <button class="cb" id="ovlClose">关闭</button>
   </div>
 
   <div id="tileLoading">🗺 地图加载中…</div>
-  <div id="tileHint" style="display:none">地图加载有点慢，请稍等…若一直空白，换个网络（如 4G）重新打开即可</div>
+  <div id="tileHint" style="display:none">地图加载有点慢，请稍等…若一直空白，换个网络（如 4G）重新打开，或 <a id="tileRetry" href="javascript:void(0)" style="color:#1e4b7a;font-weight:700">点此重试</a></div>
 
-  <div id="lb"><div class="lb-load">大图加载中…</div><img id="lbImg" alt="大图"><button class="lb-x">关闭</button></div>
+  <div id="lb">
+    <div class="lb-load">大图加载中…</div>
+    <img id="lbImg" alt="大图">
+    <div class="lb-cap" id="lbCap"></div>
+    <div class="lb-bar">
+      <button class="lb-nav" id="lbPrev">‹ 上一张</button>
+      <button class="lb-x">关闭</button>
+      <button class="lb-nav" id="lbNext">下一张 ›</button>
+    </div>
+  </div>
 
   <div id="share">
     <div class="sh-box">
