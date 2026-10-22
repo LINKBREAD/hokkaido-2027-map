@@ -15,12 +15,9 @@
 <meta property="og:image" content="https://linkbread.github.io/hokkaido-2027-map/og-image.jpg">
 <meta property="og:url" content="https://linkbread.github.io/hokkaido-2027-map/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="dns-prefetch" href="https://cyberjapandata.gsi.go.jp">
-<link rel="dns-prefetch" href="https://tile.openstreetmap.jp">
-<link rel="dns-prefetch" href="https://server.arcgisonline.com">
 <link rel="preconnect" href="https://cyberjapandata.gsi.go.jp" crossorigin>
-<link rel="preconnect" href="https://tile.openstreetmap.jp" crossorigin>
-<link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
+<link rel="dns-prefetch" href="https://server.arcgisonline.com">
+<link rel="preload" as="script" href="leaflet.js">
 <link rel="prefetch" href="thumbs.js" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9D%84%3C/text%3E%3C/svg%3E">
 <style>/* required styles */
@@ -686,12 +683,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	}
 </style>
 <script defer src="leaflet.js"></script>
-<link rel="preload" as="image" href="https://cyberjapandata.gsi.go.jp/xyz/pale/8/228/93.png">
 <link rel="preload" as="image" href="https://cyberjapandata.gsi.go.jp/xyz/pale/8/228/94.png">
-<link rel="preload" as="image" href="https://cyberjapandata.gsi.go.jp/xyz/pale/8/228/95.png">
-<link rel="preload" as="image" href="https://cyberjapandata.gsi.go.jp/xyz/pale/8/229/93.png">
 <link rel="preload" as="image" href="https://cyberjapandata.gsi.go.jp/xyz/pale/8/229/94.png">
-<link rel="preload" as="image" href="https://cyberjapandata.gsi.go.jp/xyz/pale/8/229/95.png">
 <style>
   :root{
     --airport:#64748B; --sapporo:#2563EB; --otaru:#0E9594;
@@ -704,6 +697,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
   html,body{margin:0;height:100%;font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;color:var(--ink);overflow:hidden;background:#eef1f5}
   #app{position:relative;height:100%;width:100%;overflow:hidden}
   #map{position:absolute;inset:0;z-index:1;background:#dfe5ec}
+  /* 瓦片还没到位时的网格底纹：首屏不再是一大片空白，看起来像在「铺图」 */
+  #map::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.55) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.55) 1px,transparent 1px);
+    background-size:52px 52px}
+  #map.tiles-ready::before{display:none}
 
   /* ---------- 顶部标题条 ---------- */
   #topbar{position:absolute;top:0;left:0;right:0;z-index:900;height:calc(50px + var(--safe-top));
