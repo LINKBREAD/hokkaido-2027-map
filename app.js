@@ -19,7 +19,6 @@ function armFallback(img, local, ms){
   img.addEventListener('load', function(){ clearTimeout(t); });
   img.addEventListener('error', function(){ clearTimeout(t); img.src = local; });
 }
-const SHARE_QR = "share_qr.png";
 const SITE_URL = "https://linkbread.github.io/hokkaido-2027-map/";
 
 // ==== SPOTS_START ====
@@ -165,7 +164,10 @@ const RETURN_ROUTE = ['HA1','AP1'];                          // 函馆→新千�
 // 性能参数：优先 canvas 渲染、缩放动画节流、减少拖曳时的瓦片请求
 const map = L.map('map', {zoomControl:true, tap:true, preferCanvas:true,
   zoomAnimation:true, fadeAnimation:false, markerZoomAnimation:false,
-  updateWhenZooming:false, wheelPxPerZoomLevel:120
+  updateWhenZooming:false, wheelPxPerZoomLevel:120,
+  // 手感调优：惯性更跟手、到缩放上下限不再橡皮筋回弹（拖到头就是到头，更干脆）
+  inertia:true, inertiaDeceleration:2600, inertiaMaxSpeed:2200,
+  bounceAtZoomLimits:false, easeLinearity:.22, wheelDebounceTime:40
 }).setView([42.45, 141.35], 8);
 map.zoomControl.setPosition('bottomright');
 
@@ -245,7 +247,7 @@ setTimeout(function(){
 const POP_OPT = {maxWidth:270, minWidth:230, autoPanPadding:[28,28], closeButton:true};
 const markers = {};
 const hidden = new Set();   // 被分类筛选关掉的点位（搜索不进这里，单独按关键词匹配）
-let curSort = 'cat', curQ = '';
+let curSort = 'cat';
 
 function badgeHTML(s){
   return `<span class="badge" style="background:${CATS[s.cat].color}">${s.id}</span>`;
@@ -266,8 +268,8 @@ function popupHTML(s){
   const zoom = REAL_PHOTO.has(s.id) || !!PHOTOS[s.id];   // 只有真·实拍才能点开看大图
   const img = src
     ? (zoom
-        ? `<img class="zoomable" src="${src}" data-full="${fullSrc(s.id)}" data-local="${PHOTO_DIR + s.id}.webp" alt="${s.name}">`
-        : `<img src="${src}" alt="${s.name}">`)
+        ? `<img class="zoomable" src="${src}" data-full="${fullSrc(s.id)}" data-local="${PHOTO_DIR + s.id}.webp" alt="${s.name}" decoding="async">`
+        : `<img src="${src}" alt="${s.name}" decoding="async">`)
     : `<div class="pop-img-ph">${CATS[s.cat].icon}</div>`;
   const list = visibleSpots();
   const i = list.findIndex(x=>x.id === s.id);
@@ -358,21 +360,14 @@ function buildFilters(){
     };
   });
 }
-// 搜索：编号 / 名称 / 地址 / 类型 / 行程日 / 攻略正文 全部参与匹配
-function matchQ(s, q){
-  if(!q) return true;
-  const t = (s.name + ' ' + s.id + ' ' + s.addr + ' ' + s.type + ' ' + (s.day||'') + ' ' + s.hist).toLowerCase();
-  return t.indexOf(q) >= 0;
-}
-// 列表与地图标记联动：过滤后卡片、分组标题、地图标记、计数一起更新
+// 列表与地图标记联动：分类筛选后卡片、分组标题、地图标记、计数一起更新
 function applyView(){
-  const q = curQ.trim().toLowerCase();
   const shown = [];
   const byId = {};
   SPOTS.forEach(s=>byId[s.id]=s);
   document.querySelectorAll('#list .card').forEach(card=>{
     const id = card.dataset.id, s = byId[id];
-    const ok = !!s && !hidden.has(id) && matchQ(s, q);
+    const ok = !!s && !hidden.has(id);
     card.classList.toggle('hide', !ok);
     if(ok) shown.push(id);
     if(ok){ if(!map.hasLayer(markers[id])) markers[id].addTo(map); }
@@ -420,7 +415,7 @@ function renderList(){
     g.items.forEach(s=>{
       const src = PHOTOS[s.id] || thumbSrc(s.id);
       const thumb = src
-        ? `<div class="thumb"><img src="${src}" data-id="${s.id}" alt=""></div>`
+        ? `<div class="thumb"><img src="${src}" data-id="${s.id}" alt="" decoding="async" draggable="false"></div>`
         : `<div class="thumb"><div class="thumb-ph">${CATS[s.cat].icon}</div></div>`;
       const div = document.createElement('div');
       div.className='card';
@@ -436,14 +431,6 @@ function renderList(){
   });
   applyView();
 }
-// 搜索框：输入停顿 160ms 才过滤，避免每敲一个字都重排
-const qEl = document.getElementById('q');
-let qTimer = null;
-qEl.addEventListener('input', function(){
-  clearTimeout(qTimer);
-  qTimer = setTimeout(function(){ curQ = qEl.value; applyView(); }, 160);
-});
-document.getElementById('qClear').onclick = function(){ qEl.value=''; curQ=''; applyView(); };
 document.querySelectorAll('#sortbar .sbtn').forEach(b=>{
   b.onclick = ()=>{
     document.querySelectorAll('#sortbar .sbtn').forEach(x=>x.classList.remove('on'));
@@ -455,11 +442,11 @@ document.querySelectorAll('#sortbar .sbtn').forEach(b=>{
 function focusSpot(id){
   const s = SPOTS.find(x=>x.id===id); if(!s) return;
   if(!map.hasLayer(markers[id])) markers[id].addTo(map);
-  map.flyTo([s.lat,s.lng], 14, {duration:.8});
+  map.flyTo([s.lat,s.lng], 14, {duration:.6});
   setTimeout(()=>{
     markers[id].bindPopup(popupHTML(s), POP_OPT).openPopup();
     afterPopupOpen(s);
-  }, 850);
+  }, 620);
 }
 
 // ---------- 行程总览弹层（航班 + 酒店 + 路线时间轴）----------
@@ -565,7 +552,9 @@ function updateLbNav(){
   document.getElementById('lbPrev').disabled = (i <= 0);
   document.getElementById('lbNext').disabled = (i < 0 || i >= list.length - 1);
   const s = i >= 0 ? list[i] : null;
-  lbCap.textContent = s ? `${s.name}${s.day ? ' · ' + s.day : ''}　(${i+1}/${list.length})` : '';
+  lbCap.innerHTML = s
+    ? `${s.name}${s.day ? ' · ' + s.day : ''}　(${i+1}/${list.length})<span class="hint">左右滑动切换 · 下滑关闭</span>`
+    : '';
 }
 function lbStep(d){
   const list = visibleSpots();
@@ -576,30 +565,52 @@ function lbStep(d){
   openLightbox(fullSrc(s.id), PHOTOS[s.id] ? '' : PHOTO_DIR + s.id + '.webp', s.id);
 }
 function closeLightbox(){ lb.classList.remove('show'); lbImg.removeAttribute('src'); }
-lb.onclick = function(e){ if(!e.target.closest('.lb-nav') && !e.target.closest('.lb-x')) closeLightbox(); };
+let lbSwiped = false;   // 刚滑动过就别再当成「点背景关闭」
+lb.onclick = function(e){
+  if(lbSwiped){ lbSwiped = false; return; }
+  if(!e.target.closest('.lb-nav') && !e.target.closest('.lb-x')) closeLightbox();
+};
 document.querySelector('#lb .lb-x').onclick = closeLightbox;
 document.getElementById('lbPrev').onclick = ()=>lbStep(-1);
 document.getElementById('lbNext').onclick = ()=>lbStep(1);
 
-// ---------- 分享二维码（微信扫码直接打开）----------
-const share = document.getElementById('share');
-function openShare(){
-  const q = document.getElementById('shQr');
-  if(q.dataset.src){ q.src = q.dataset.src; q.removeAttribute('data-src'); }  // 点开才下载
-  share.classList.add('show');
+// ---------- 手势：让手机上的滑动更符合直觉 ----------
+// dir 判定：先锁定主轴（横滑/竖滑），避免斜着划时误触发；要求「又快又远」才算数
+function onSwipe(el, cb){
+  let x0 = 0, y0 = 0, t0 = 0, axis = null;
+  el.addEventListener('touchstart', function(e){
+    if(e.touches.length !== 1){ axis = 'skip'; return; }   // 双指缩放不参与
+    const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); axis = null;
+  }, {passive:true});
+  el.addEventListener('touchmove', function(e){
+    if(axis !== null) return;
+    const t = e.touches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+    if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    axis = Math.abs(dy) > Math.abs(dx) * 1.2 ? 'y' : 'x';
+  }, {passive:true});
+  el.addEventListener('touchend', function(e){
+    const ax = axis; axis = null;
+    if(ax === null || ax === 'skip') return;
+    const t = e.changedTouches[0] || {};
+    const dx = (t.clientX || x0) - x0, dy = (t.clientY || y0) - y0;
+    if(Date.now() - t0 > 600) return;
+    if(Math.abs(dx) < 45 && Math.abs(dy) < 60) return;
+    cb(dx, dy, ax);
+  }, {passive:true});
 }
-function closeShare(){ share.classList.remove('show'); }
-document.getElementById('bShare').onclick = openShare;
-document.getElementById('shClose').onclick = closeShare;
-share.onclick = (e)=>{ if(e.target === share) closeShare(); };
-document.getElementById('shCopy').onclick = function(){
-  const t = SITE_URL, btn = this;
-  const ok = ()=>{ const o = btn.textContent; btn.textContent = '✅ 已复制'; setTimeout(()=>btn.textContent = o, 1600); };
-  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok).catch(()=>{}); }
-  else { const ta = document.createElement('textarea'); ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); ok(); }catch(e){}
-    document.body.removeChild(ta); }
-};
+let sideSwiped = false;
+onSwipe(sidebar, function(dx, dy, axis){
+  if(axis === 'x' && dx < 0 && isMobile()){ sideSwiped = true; closeSide(); }
+});
+// 滑动后紧跟的那次 click 要吃掉，否则滑一下会误触发卡片跳转
+sidebar.addEventListener('click', function(e){
+  if(sideSwiped){ sideSwiped = false; e.stopPropagation(); e.preventDefault(); }
+}, true);
+onSwipe(lb, function(dx, dy, axis){
+  lbSwiped = true;
+  if(axis === 'x'){ if(dx < 0) lbStep(1); else lbStep(-1); }
+  else if(dy > 0) closeLightbox();          // 大图下滑关闭
+});
 
 // ---------- 控件 ----------
 const bTripM = document.getElementById('bTripM');
